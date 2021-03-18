@@ -130,3 +130,6 @@ void:>exit
 <br/>
 other commands are now reserved for further development.<br/>
 see in voruntime/internal.go: internal
+
+## miscellaneous
+* voidshell and socketterminal(https://github.com/jlywxy/socketterminal) use the protocol of VT100 terminal.
