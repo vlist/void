@@ -1,9 +1,10 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
+Current version: 1.11.1 (2021.3.18).<br/>
+Author: jlywxy (ms2692848699@outlook.com)<br/><br/>
 IMPORTANT: this program now don't support Windows. [see reason](#vs.win.unsup)<br/>
-current version: 1.11.1 (2021.3.18)<br/>
-author: jlywxy (ms2692848699@outlook.com)
+
 ## build voidshell
 ```shell
 $ go clean
@@ -13,7 +14,7 @@ $ go build
 ```shell
 $ ./void
 ```
-to launch in background, type
+To launch in background, type
 ```shell
 $ screen -R voidsh
 $ ./void
@@ -26,16 +27,16 @@ $ ./void
 $ stty raw; nc -U ./voidsh
 ```
 ### using socketterminal
-see https://github.com/jlywxy/socketterminal
+See https://github.com/jlywxy/socketterminal
 ```shell
 $ ./socketterminal ./voidsh
 ```
-voidshell listen to one default unix socket connections only(when launching)<br/>
-to change that default unix socket file path, modify [configuration files](#conffile.sock)
-for multiple kind of terminal connecting concurrently, use that default socket to configure, see builtin command [shutil](#shutil)
+voidshell listen to one default unix socket connections only(when launching).<br/>
+To change that default unix socket file path, modify [configuration files](#conffile.sock).</br>
+For multiple kind of terminal connecting concurrently, use that default socket to configure, see builtin command [shutil](#shutil).
 
 ## configure voidshell
-configuraton file: .vsrc
+Configuraton file: .vsrc
 ### socket file path
 <span id="conffile.sock"></span>
 ```json
@@ -44,7 +45,7 @@ configuraton file: .vsrc
 }
 ```
 ### password for internal command "sudo"
-"password_encrypted" should be sha256 encrypted
+"password_encrypted" should be sha256 encrypted.
 ```json
 {
   "password_encrypted": "sha256(password)"
@@ -52,11 +53,11 @@ configuraton file: .vsrc
 ```
 
 ## plugin development
-plugin for voidshell is node.js script file,
-located in plugin/root directory
+Plugins are node.js script file,
+located in plugin/root directory.
 ### create a plugin
-create a file located in plugin/root directory<br/>
-plugin template shown below:
+Create a javascript file located in plugin/root directory.<br/>
+Plugin template is shown below:
 ```javascript
 /*init code,do not modify*/
 var ctx={};module.exports={ init: (_ctx)=>{ctx=_ctx}, run: main }
@@ -66,16 +67,16 @@ function main(){
     ctx.exit()
 }
 ```
-plugin entrypoint is function main.
+Plugin entrypoint is function main.
 ### using plugin
-simply type plugin name and arguments in voidshell
+Simply type plugin name and arguments in voidshell.
 ```shell
 void:>plugin-name
 Hello void.
 ```
 ### calling convention
 
-data comes with `ctx`: 
+Data comes with `ctx`: 
 * plugin name and arguments: <br/>
    `ctx.args[plugin_name, plugin_arg1, plugin_arg2, ...]`
 * input function: <br/>
@@ -88,18 +89,18 @@ data comes with `ctx`:
    `ctx.format(text)`
    
 ### void format text(VFT)
-* converts vft tag to VT100 terminal colors
-* only supports forecolor and bold format
-* format:`<vft {red|green|yellow|blue} {bold|}>formatting text</vft>`,<br/>
+* Converts vft tag to VT100 terminal colors.
+* Only supports forecolor and bold format.
+* Format:`<vft {red|green|yellow|blue} {bold|}>formatting text</vft>`,<br/>
   escape tag is `"<\vft>"` and `"<\/vft>"`
-* example: `"black<vft red bold>red bold</vft>black<vft blue>blue</vft>black<\vft green bold>shouldn't formatteded<\/vft>"`<br/>
+* Example: `"black<vft red bold>red bold</vft>black<vft blue>blue</vft>black<\vft green bold>shouldn't formatteded<\/vft>"`,<br/>
   output should be:
   black<span style="color: red; font-weight: bold">red bold</span>black<span style="color: blue">blue</span>black&lt;vft green bold&gt;shouldn't formatted&lt;/vft&gt;<br/>
-* different implements in vft.go and vft.js are equivalent
+* Different implements in vft.go and vft.js are equivalent.
   
 ## builtin commands
 ### info
-displays os info and shell/terminal info
+Displays os info and shell/terminal info.
 ```shell
 void:>info
 
@@ -122,14 +123,14 @@ Process Context(pctx):
         Privileged: false
 ```
 ### exec
-run bash commands in voidshell
+Run bash commands in voidshell.
 ```shell
 void:>exec ls
 README.md main.go   plugin    void.png  voidsh    vokernel  voruntime voshell
 ```
 ### shutil
 <span id="shutil"></span>
-tool for managing socket servers<br/>
+Manage socket servers.<br/>
 ```shell
 void:>shutil
 usage [--options network address]
@@ -137,19 +138,19 @@ usage [--options network address]
   --kill: close specific socket server
   --list: list all shell socket server
 ```
-network: "tcp" or "unix"(unix socket)<br/>
-address: "ip:port" for "tcp", or socket filename for "unix"<br/><br/>
-examples:<br/>
-opening new socket servers:
+network: "tcp" or "unix"(unix socket).<br/>
+address: "ip:port" for "tcp", or socket filename for "unix".<br/><br/>
+Examples:<br/>
+Opening new socket servers:
 ```shell
 void:>shutil --open tcp:127.0.0.1:9001
 void:>shutil --open unix:/tmp/vssock1
 ```
-close a socket server:
+Close a socket server:
 ```shell
 void:>shutil --kill unix:/tmp/vssock1
 ````
-list all opened socket server
+List all opened socket server:
 ```shell
 void:>shutil --list
 opening socket shell: 
@@ -157,15 +158,15 @@ unix:./voidsh (default)
 tcp:127.0.0.1:9001
 unix:/tmp/vssock1
 ```
-the default socket neither could be reopened nor be killed.
+The default socket neither could be reopened nor be killed.
 ### exit
-simply exit the shell(close terminal only, won't shut down service)
+Simply exit the shell(close current terminal only, won't shut down service).
 ```shell
 void:>exit
 ```
 <br/>
-other commands are now reserved for further development.<br/>
-see in voruntime/internal.go: internal
+Other commands are now reserved for further development,<br/>
+see in voruntime/internal.go
 
 ## miscellaneous
 * voidshell and socketterminal(https://github.com/jlywxy/socketterminal) use the protocol of VT100 terminal. 
