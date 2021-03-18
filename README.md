@@ -1,5 +1,6 @@
 # voidshell
 voidshell is a CUSTOM shell service
+![avatar](void.png)
 
 ## build voidshell
 ```shell
