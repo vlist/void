@@ -25,7 +25,7 @@ voidshell is now listening unix socket connections only.
 $ stty raw; nc -U ./voidsh
 ```
 ### using void socketterminal
-(now under development, see https://github.com/jlywxy/sockterm)
+(now under development, see https://github.com/jlywxy/socketterminal)
 ```shell
 $ ./sockterm ./voidsh
 ```
