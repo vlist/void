@@ -50,7 +50,7 @@ configuraton file: .vsrc
 plugin for voidshell is node.js script file,
 located in plugin/root directory
 ### create a plugin
-create a file located in plugin/root directory
+create a file located in plugin/root directory<br/>
 plugin template shown below:
 ```javascript
 /*init code,do not modify*/
@@ -62,17 +62,24 @@ function main(){
 }
 ```
 plugin entrypoint is function main.
+### using plugin
+simply type plugin name and arguments in voidshell
+```shell
+void:>plugin-name
+Hello void.
+```
 ### calling convention
 
-1. plugin args: <br/>
+data comes with `ctx`: 
+* plugin name and arguments: <br/>
    `ctx.args[plugin_name, plugin_arg1, plugin_arg2, ...]`
-2. input: <br/>
+* input function: <br/>
    `ctx.input(prompt,callback_func)`
-3. output: <br/>
+* output function: <br/>
    `ctx.print(content)`
-4. exit plugin: <br/>
+* exit the plugin: <br/>
    `ctx.exit()`
-5. transform void format text: <br/>
+* void format text transformer: <br/>
    `ctx.format(text)`
    
 ### void format text(VFT)
