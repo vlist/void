@@ -10,8 +10,15 @@ $ go build
 ```shell
 $ ./void
 ```
+to launch in background, type
+```shell
+$ screen -R voidsh
+$ ./void
+```
+...or make a voidshell.service file to let systemctl manage voidshell service on linux.
 
 ## connect to voidshell
+voidshell is now listening unix socket connections only.
 ### using netcat
 ```shell
 $ stty raw; nc -U ./voidsh
