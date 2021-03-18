@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-
+current version: 1.11.1 (2021.3.18)
 ## build voidshell
 ```shell
 $ go clean
@@ -19,20 +19,23 @@ $ ./void
 ...or make a voidshell.service file to let systemctl manage voidshell service on linux.
 
 ## connect to voidshell
-voidshell is now listening unix socket connections only.
 ### using netcat
 ```shell
 $ stty raw; nc -U ./voidsh
 ```
-### using void socketterminal
-(now under development, see https://github.com/jlywxy/socketterminal)
+### using socketterminal
+see https://github.com/jlywxy/socketterminal
 ```shell
-$ ./sockterm ./voidsh
+$ ./socketterminal ./voidsh
 ```
+voidshell listen to one default unix socket connections only(when launching)<br/>
+to change that default unix socket file path, modify [configuration files](#conffile.sock)
+for multiple kind of terminal connecting concurrently, use that default socket to configure, see builtin command [shutil](#shutil)
+
 ## configure voidshell
 configuraton file: .vsrc
 ### socket file path
-
+<span id="conffile.sock"></span>
 ```json
 {
   "socket": "./socketfile"
@@ -83,13 +86,14 @@ data comes with `ctx`:
    `ctx.format(text)`
    
 ### void format text(VFT)
-* converts vft tag to terminal colors
+* converts vft tag to VT100 terminal colors
 * only supports forecolor and bold format
 * format:`<vft {red|green|yellow|blue} {bold|}>formatting text</vft>`,<br/>
-  escape tag is `<\vft>` and `<\/vft>` (in string `"<\\vft>"`,`"<\\/vft>"`)
-* example: `black<vft red bold>red bold</vft>black<vft blue>blue</vft>black<\\vft green bold>shouldn't formatteded<\\/vft>`<br/>
-  output like:
-  black<span style="color: red; font-weight: bold">red bold</span>black<span style="color: blue">blue</span>black&lt;vft green bold&gt;shouldn't formatted&lt;/vft&gt;
+  escape tag is `"<\vft>"` and `"<\/vft>"`
+* example: `"black<vft red bold>red bold</vft>black<vft blue>blue</vft>black<\vft green bold>shouldn't formatteded<\/vft>"`<br/>
+  output should be:
+  black<span style="color: red; font-weight: bold">red bold</span>black<span style="color: blue">blue</span>black&lt;vft green bold&gt;shouldn't formatted&lt;/vft&gt;<br/>
+* different implements in vft.go and vft.js are equivalent
   
 ## builtin commands
 ### info
@@ -122,6 +126,7 @@ void:>exec ls
 README.md main.go   plugin    void.png  voidsh    vokernel  voruntime voshell
 ```
 ### shutil
+<span id="shutil"></span>
 tool for managing socket servers<br/>
 ```shell
 void:>shutil
@@ -150,6 +155,7 @@ unix:./voidsh (default)
 tcp:127.0.0.1:9001
 unix:/tmp/vssock1
 ```
+the default socket neither could be reopened nor be killed.
 ### exit
 simply exit the shell(close terminal only, won't shut down service)
 ```shell
