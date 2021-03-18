@@ -43,7 +43,7 @@ func internal_info(pctx *vokernel.ProcContext){
 	}
 	info:= vokernel.GetOSInfo()
 	var formattedInfo=""
-	formattedInfo+="<vft bold>Void System</vft> "+info.VoVersion+"\n"
+	formattedInfo+="<vft bold>voidshell</vft> "+info.VoVersion+"\n"
 	formattedInfo+="    Golang Version: "+info.GoVersion+"\n"
 	formattedInfo+="    Current Working Directory: "+info.CurrentWorkingDirectory+"\n"
 	formattedInfo+="    System Arch: "+info.SystemArch+"\n"

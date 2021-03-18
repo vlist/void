@@ -115,6 +115,12 @@ Process Context(pctx):
         Terminal Name: *
         Privileged: false
 ```
+### exec
+run bash commands in voidshell
+```shell
+void:>exec ls
+README.md main.go   plugin    void.png  voidsh    vokernel  voruntime voshell
+```
 
 ### exit
 simply exit the shell(close terminal only, won't shut down service)

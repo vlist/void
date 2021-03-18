@@ -40,6 +40,7 @@ func serve(co net.Conn){
 		Privileged: false,
 		Name: pa,
 	}
+	voruntime.Getsize(sctx)
 	for{
 		s,e:=sctx.Input(vokernel.Prompt(&sctx))
 		if e!=nil{
