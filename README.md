@@ -60,3 +60,37 @@ located in plugin/root directory
 * example: `black<vft red bold>red bold</vft>black<vft blue>blue</vft>black<\\vft green bold>shouldn't formatteded<\\/vft>`<br/>
   output like:
   black<span style="color: red; font-weight: bold">red bold</span>black<span style="color: blue">blue</span>black&lt;vft green bold&gt;shouldn't formatted&lt;/vft&gt;
+  
+## builtin commands
+### info
+displays os info and shell/terminal info
+```shell
+void:>info
+
+                    _      __  __           
+     _   __ ____   (_) ___/ / _\ \          
+    | | / // __ \ / // __  / (_)\ \         
+    | |/ // /_/ // // /_/ / _   / / ______    
+    |___/ \____//_/ \____/ (_) /_/ /_____/  
+     void:>void --everything
+
+Void System 1.1
+    Golang Version: go1.15.6 darwin/amd64
+    Current Working Directory: *
+    System Arch: darwin/amd64
+Process Context(pctx):
+    Command Name: info
+    Arguments: []
+    Shell Context(sctx): 
+        Terminal Name: *
+        Privileged: false
+```
+
+### exit
+simply exit the shell(close terminal only, won't shut down service)
+```shell
+void:>exit
+```
+<br/>
+other commands are now reserved for further development.<br/>
+see in voruntime/internal.go: internal
