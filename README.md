@@ -1,5 +1,5 @@
-# Void Shell
-void shell is a CUSTOM shell service
+# voidshell
+voidshell is a CUSTOM shell service
 
 ## build voidshell
 ```shell
@@ -29,8 +29,9 @@ $ stty raw; nc -U ./voidsh
 $ ./sockterm ./voidsh
 ```
 ## configure voidshell
+configuraton file: .vsrc
 ### socket file path
-(in file .vsrc)
+
 ```json
 {
   "socket": "./socketfile"
