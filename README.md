@@ -58,10 +58,5 @@ located in plugin/root directory
 * format:`<vft {red|green|yellow|blue} {bold|}>formatting text</vft>`,<br/>
   escape tag is `<\vft>` and `<\/vft>` (in string `"<\\vft>"`,`"<\\/vft>"`)
 * example: `black<vft red bold>red bold</vft>black<vft blue>blue</vft>black<\\vft green bold>shouldn't formatteded<\\/vft>`<br/>
-  output like: 
-  
+  output like:
   black<span style="color: red; font-weight: bold">red bold</span>black<span style="color: blue">blue</span>black&lt;vft green bold&gt;shouldn't formatted&lt;/vft&gt;
-```diff
-+ this will be highlighted in green
-- this will be highlighted in red
-```
