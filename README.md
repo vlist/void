@@ -16,7 +16,7 @@ $ ./void
 ```shell
 $ stty raw; nc -U ./voidsh
 ```
-###u sing void socketterminal
+### using void socketterminal
 ```shell
 $ ./sockterm ./voidsh
 ```
