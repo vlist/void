@@ -49,6 +49,19 @@ configuraton file: .vsrc
 ## plugin development
 plugin for voidshell is node.js script file,
 located in plugin/root directory
+### create a plugin
+create a file located in plugin/root directory
+plugin template shown below:
+```javascript
+/*init code,do not modify*/
+var ctx={};module.exports={ init: (_ctx)=>{ctx=_ctx}, run: main }
+
+function main(){
+    ctx.print("Hello void.")
+    ctx.exit()
+}
+```
+plugin entrypoint is function main.
 ### calling convention
 
 1. plugin args: <br/>
