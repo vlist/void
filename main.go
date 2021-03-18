@@ -2,11 +2,12 @@ package main
 
 import (
 	"void/voruntime"
-	"void/voshell"
 )
 
 func main(){
+	var c chan int=make(chan int,1)
 	voruntime.Initrc()
-	//go voruntime.InitRPC()
-	voshell.InitSocket()
+	voruntime.InitInternal()
+	voruntime.InitSocket()
+	<-c
 }

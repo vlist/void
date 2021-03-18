@@ -121,7 +121,35 @@ run bash commands in voidshell
 void:>exec ls
 README.md main.go   plugin    void.png  voidsh    vokernel  voruntime voshell
 ```
-
+### shutil
+tool for managing socket servers<br/>
+```shell
+void:>shutil
+usage [--options network address]
+  --open: create a new shell socket server
+  --kill: close specific socket server
+  --list: list all shell socket server
+```
+network: "tcp" or "unix"(unix socket)<br/>
+address: "ip:port" for "tcp", or socket filename for "unix"<br/><br/>
+examples:<br/>
+opening new socket servers:
+```shell
+void:>shutil --open tcp:127.0.0.1:9001
+void:>shutil --open unix:/tmp/vssock1
+```
+close a socket server:
+```shell
+void:>shutil --kill unix:/tmp/vssock1
+````
+list all opened socket server
+```shell
+void:>shutil --list
+opening socket shell: 
+unix:./voidsh (default)
+tcp:127.0.0.1:9001
+unix:/tmp/vssock1
+```
 ### exit
 simply exit the shell(close terminal only, won't shut down service)
 ```shell

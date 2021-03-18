@@ -3,21 +3,111 @@ package voruntime
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"log"
+	"net"
+	"os"
 	"strings"
 	"void/vokernel"
 )
 
-var internal =map[string]func(*vokernel.ProcContext){
-	"info": internal_info,
-	"exit": func(pctx *vokernel.ProcContext) {
-		pctx.Shell.Writer.Close()
-	},
-	"sudo": internal_sudo,
-	"unsudo": func(pctx *vokernel.ProcContext) {
-		pctx.Shell.Privileged=false
-	},
-}
+var shmap=map[string]*net.Listener{}
+var internal map[string]func(*vokernel.ProcContext)
+func InitInternal(){
+	internal=map[string]func(*vokernel.ProcContext){
 
+		"info": internal_info,
+		"exit": func(pctx *vokernel.ProcContext) {
+			pctx.Shell.Writer.Close()
+		},
+		"sudo": internal_sudo,
+		"unsudo": func(pctx *vokernel.ProcContext) {
+			pctx.Shell.Privileged=false
+		},
+		"shutil": func(pctx *vokernel.ProcContext){
+			rcsockid:="unix:"+RC["socket"]
+			usage:=`usage [--options network:address]
+	--open: create a new shell socket server
+	--kill: close specific socket server
+	--list: list all shell socket server
+
+`
+			if len(pctx.Args) ==0{
+				pctx.Shell.Output(usage)
+				return
+			}
+			switch pctx.Args[0]{
+			case "--open":{
+				if len(pctx.Args)<2{
+					pctx.Shell.Output("invalid arguments\n")
+					pctx.Shell.Output(usage)
+					return
+				}
+				sockid:=pctx.Args[1]
+				if sockid==rcsockid{
+					pctx.Shell.Output("could not operate on default socket\n")
+					return
+				}
+				na:=strings.Split(sockid,":")
+				network:=na[0]
+				address:=strings.Join(na[1:],":")
+				switch network{
+				case "tcp":{}
+				case "unix":{
+					os.RemoveAll(address)
+				}
+				default:{
+					pctx.Shell.Output("network "+network+" not supported\n")
+				}
+				}
+
+				l,e:= Startserver(network,address)
+				if e!=nil{
+					pctx.Shell.Output("opening shell on socket "+sockid+" failed\n")
+					log.Print(e)
+					return
+				}
+				shmap[sockid]=l
+			}
+			case "--kill":{
+				if len(pctx.Args)<2{
+					pctx.Shell.Output("invalid arguments\n")
+					pctx.Shell.Output(usage)
+					return
+				}
+				sockid:=pctx.Args[1]
+				if sockid==rcsockid{
+					pctx.Shell.Output("could not operate on default socket\n")
+					return
+				}
+				l:=shmap[sockid]
+				if *l!=nil{
+					e:=(*l).Close()
+					if e!=nil{
+						pctx.Shell.Output("closing shell on socket "+sockid+" failed\n")
+						log.Print(e)
+						return
+					}
+					delete(shmap,sockid)
+				}
+			}
+			case "--list":{
+				pctx.Shell.Output("opening socket shell: \n")
+				pctx.Shell.Output(rcsockid+" (default)\n")
+				for k,_ := range(shmap){
+					pctx.Shell.Output(k+"\n")
+				}
+			}
+			default:{
+				pctx.Shell.Output("invalid arguments\n")
+				pctx.Shell.Output(usage)
+				return
+			}
+
+			}
+
+		},
+	}
+}
 func internal_info(pctx *vokernel.ProcContext){
 	var printLogo bool=true
 	var printExecContext bool=true

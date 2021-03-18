@@ -30,7 +30,7 @@ func PreProcess(command string, sctx *vokernel.ShellContext) vokernel.ProcContex
 	return pctx
 }
 func Process(pctx vokernel.ProcContext){
-	println("process: "+pctx.CommandName)
+	println("process: "+pctx.CommandName+" "+pctx.Type)
 	if pctx.CommandName==""{
 		return
 	}

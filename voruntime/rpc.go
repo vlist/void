@@ -13,7 +13,7 @@ func InitRPC(){
 	l,_:=net.Listen("unix",pa)
 	for{
 		co,_:=l.Accept()
-		go serve(co)
+		go serveRPC(co)
 	}
 }
 type rpcfunc func(string)string
@@ -25,7 +25,7 @@ var funclist=map[string]rpcfunc{
 }
 var rpccon net.Conn
 var rpclist func(string)string
-func serve(co net.Conn){
+func serveRPC(co net.Conn){
 	rpccon=co
 	for{
 		r:=bufio.NewReader(co)
