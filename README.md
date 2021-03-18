@@ -1,7 +1,9 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-current version: 1.11.1 (2021.3.18)
+IMPORTANT: this program now don't support Windows. [see reason](#vs.win.unsup)<br/>
+current version: 1.11.1 (2021.3.18)<br/>
+author: jlywxy (ms2692848699@outlook.com)
 ## build voidshell
 ```shell
 $ go clean
@@ -167,3 +169,5 @@ see in voruntime/internal.go: internal
 
 ## miscellaneous
 * voidshell and socketterminal(https://github.com/jlywxy/socketterminal) use the protocol of VT100 terminal. 
+<span id="vs.win.unsup"></span>
+* voidshell now DO NOT support windows, because voidshell use unix socket to listen and run initializing commands, while Windows don't support unix socket.
