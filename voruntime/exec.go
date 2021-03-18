@@ -24,3 +24,4 @@ func Exec(code string, sctx *vokernel.ShellContext){
 	p.Wait()
 	sctx.RedirectOutput(sctx.InternalWriterDestination)
 }
+

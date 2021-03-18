@@ -24,3 +24,4 @@ func Getsize(sctx vokernel.ShellContext)(int,int){
 	println(cols)
 	return rows,cols
 }
+
