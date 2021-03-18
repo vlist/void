@@ -1,8 +1,8 @@
 package main
 
 import (
-	"voidsystem/voruntime"
-	"voidsystem/voshell"
+	"void/voruntime"
+	"void/voshell"
 )
 
 func main(){

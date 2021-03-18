@@ -3,7 +3,7 @@ package voruntime
 import (
 	"strconv"
 	"strings"
-	"voidsystem/vokernel"
+	"void/vokernel"
 )
 
 func PreProcess(command string, sctx *vokernel.ShellContext) vokernel.ProcContext{

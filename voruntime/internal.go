@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"strings"
-	"voidsystem/vokernel"
+	"void/vokernel"
 )
 
 var internal =map[string]func(*vokernel.ProcContext){

@@ -4,7 +4,7 @@ import (
 	"github.com/creack/pty"
 	"io"
 	exec2 "os/exec"
-	"voidsystem/vokernel"
+	"void/vokernel"
 )
 
 func Exec(code string, sctx *vokernel.ShellContext){

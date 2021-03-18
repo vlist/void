@@ -4,12 +4,14 @@ import (
 	"io"
 	"net"
 	"os"
-	"voidsystem/vokernel"
-	"voidsystem/voruntime"
+	"void/vokernel"
+	"void/voruntime"
 )
 
-var pa="/Users/jlywxy/voidsh"
+var pa string
 func InitSocket(){
+	pa=voruntime.RC["socket"]
+	println("listening: "+pa)
 	os.RemoveAll(pa)
 	l,_:=net.Listen("unix",pa)
 	for{
