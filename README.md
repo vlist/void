@@ -3,7 +3,7 @@ voidshell is a CUSTOM shell service
 ![avatar](void.png)
 Current version: 1.11.1 (2021.3.18).<br/>
 Author: jlywxy (ms2692848699@outlook.com)<br/><br/>
-IMPORTANT: this program now don't support Windows. [see reason](#vs.win.unsup)<br/>
+IMPORTANT: this program now don't support Windows. [see reason](#miscellaneous)<br/>
 
 ## build voidshell
 ```shell
@@ -32,7 +32,7 @@ See https://github.com/jlywxy/socketterminal
 $ ./socketterminal ./voidsh
 ```
 voidshell listen to one default unix socket connections only(when launching).<br/>
-To change that default unix socket file path, modify [configuration files](#conffile.sock).</br>
+To change that default unix socket file path, modify [configuration files](#shutil).</br>
 For multiple kind of terminal connecting concurrently, use that default socket to configure, see builtin command [shutil](#shutil).
 
 ## configure voidshell
@@ -51,6 +51,13 @@ Configuraton file: .vsrc
   "password_encrypted": "sha256(password)"
 }
 ```
+### plugin root directory
+```json
+{
+  "plugin_root": "path"
+}
+```
+Plugin files should be located in path/root/ firectory.
 
 ## plugin development
 Plugins are node.js script file,
@@ -71,23 +78,28 @@ Plugin entrypoint is function main.
 ### using plugin
 Simply type plugin name and arguments in voidshell.
 ```shell
-void:>plugin-name
+void:>plugins-name
 Hello void.
 ```
 ### calling convention
 
 Data comes with `ctx`: 
 * plugin name and arguments: <br/>
-   `ctx.args[plugin_name, plugin_arg1, plugin_arg2, ...]`
-* input function: <br/>
+   `ctx.args=[plugin_name, plugin_arg1, plugin_arg2, ...]`
+* plugin root directory: <br/>
+   `ctx.pwd="./plugins/root"`
+* input: <br/>
    `ctx.input(prompt,callback_func)`
-* output function: <br/>
-   `ctx.print(content)`
-* exit the plugin: <br/>
-   `ctx.exit()`
+* output: <br/>
+  output a string:
+   `ctx.print(content)`<br/>
+  output a VFT formatted string:
+   `ctx.printf(content)`<br/>
 * void format text transformer: <br/>
    `ctx.format(text)`
-   
+* exit the plugin: <br/>
+  `ctx.exit()`
+  
 ### void format text(VFT)
 * Converts vft tag to VT100 terminal colors.
 * Only supports forecolor and bold format.
@@ -126,10 +138,9 @@ Process Context(pctx):
 Run bash commands in voidshell.
 ```shell
 void:>exec ls
-README.md main.go   plugin    void.png  voidsh    vokernel  voruntime voshell
+README.md main.go   plugins    void.png  voidsh    vokernel  voruntime voshell
 ```
 ### shutil
-<span id="shutil"></span>
 Manage socket servers.<br/>
 ```shell
 void:>shutil
@@ -169,6 +180,29 @@ Other commands are now reserved for further development,<br/>
 see in voruntime/internal.go
 
 ## miscellaneous
-* voidshell and socketterminal(https://github.com/jlywxy/socketterminal) use the protocol of VT100 terminal. 
-<span id="vs.win.unsup"></span>
+* voidshell and socketterminal(https://github.com/jlywxy/socketterminal) use the protocol of VT100 terminal.
 * voidshell now DO NOT support windows, because voidshell use unix socket to listen and run initializing commands, while Windows don't support unix socket.
+
+## update log
+1.11.2 (20A0319)  *Newest Alpha
+* added a configuration option to set plugin root directory, see [voidshell configuration](#configure-voidshell)
+* modified plugin calling conventions, see [plugin development](#plugin-development)
+* internal code modifications:
+    * change `voruntime.Exec` to `voruntime.BashExec`, then `voruntime.Exec` directly spawn process while `voruntime.BashExec` use /bin/bash to eval bash commands
+    * added keys `ctx.printf` and `ctx.pwd` to plugin_init.js
+    * made `voruntime.Process` able to pass plugin root in `voruntime.RC` to plugin_init.js 
+
+1.11.1 (2021.3.18 20:00)
+* added builtin command "shutil" to manage server sockets. 
+now voidshell could accept multiple kinds of terminal connections concurrently
+* internal code modifications:
+    * made `net.Listen(network,path)` reusable in socketshell.go, added map `shmap` to save server listeners, added function of shutil in map `voruntime.internal`
+
+1.11 (2021.3.18 17:37) bugfix
+* removed dependency of xterm-resize in module "exec.go"; add "resize.go" for equivalence
+* add usage of builtin command "exec" in "README.md"
+* add some miscellaneous for terminal protocol in "README.md"
+    * removed bash commands `resize>>/dev/null` in `voruntime.Exec`, then added function `voruntime.Getsize` in resize.go to get terminal rows and cols.
+
+1.0 (2021.3.18)
+repo initialization

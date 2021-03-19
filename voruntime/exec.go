@@ -7,14 +7,14 @@ import (
 	"void/vokernel"
 )
 
-func Exec(code string, sctx *vokernel.ShellContext){
-	println("exec code:"+code)
-	//bfix:="IFS=\" \";read -a size <<< `stty size`;stty rows ${size[0]} cols ${size[1]};echo rows=${size[0]},cols=${size[1]}"
+func BashExec(code string, sctx *vokernel.ShellContext){
+	println("exec bash code:"+code)
+	args:=[]string{"-c",code}
+	Exec(sctx,"bash",args...)
+}
+func Exec(sctx *vokernel.ShellContext, name string, arg...string){
 	rows, cols:=Getsize(*sctx)
-	//bfix:="stty rows "+strconv.Itoa(rows)+" cols "+strconv.Itoa(cols)
-	//bfix:="echo"
-	//efix:=bfix
-	p:=exec2.Command("/bin/bash","-c", code)
+	p:=exec2.Command(name,arg...)
 	f,_:=pty.StartWithSize(p,&pty.Winsize{
 		Rows: uint16(rows),
 		Cols: uint16(cols),

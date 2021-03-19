@@ -1,13 +1,3 @@
-
-
-
-
-//deprecated
-
-
-
-
-
 const net=require("net")
 /*
 VSRPC
@@ -22,7 +12,7 @@ callback:{
 }
 */
 
-rpccon=net.connect("/Users/jlywxy/go/src/voidsystem/vsrpc")
+rpccon=net.connect("/Users/jlywxy/voidshell/rpc1")
 rpclist={}
 rpccon.on('data',(d)=>{
     rpcobj=JSON.parse(d.toString())

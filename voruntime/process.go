@@ -37,7 +37,7 @@ func Process(pctx vokernel.ProcContext){
 	pctx.Shell.Output("\r")
 	switch pctx.Type {
 	case "exec":{
-		Exec(strings.Join(pctx.Args," "),pctx.Shell)
+		BashExec(strings.Join(pctx.Args," "),pctx.Shell)
 	}
 	case "internal":{
 			f := internal[pctx.CommandName]
@@ -47,7 +47,9 @@ func Process(pctx vokernel.ProcContext){
 				pctx.Shell.Output("command not found\n")
 			}}
 	case "plugin":{
-		Exec("node plugin/plugin_init.js "+pctx.CommandName+" "+strings.Join(pctx.Args," "),pctx.Shell)
+		args:=append([]string{"./plugins/plugin_init.js", RC["plugin_root"], pctx.CommandName},pctx.Args...)
+		Exec(pctx.Shell,"node",args...)
+		//BashExec("node "+RC["plugin_root"]+"/plugin_init.js "+pctx.CommandName+" "+strings.Join(pctx.Args," "),pctx.Shell)
 	}
 	}
 }
