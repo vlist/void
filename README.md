@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.11.1 (2021.3.18).<br/>
+Current version: 1.11.2 (20A0319). [See update log](#update-log).<br/>
 Author: jlywxy (ms2692848699@outlook.com)<br/><br/>
 IMPORTANT: this program now don't support Windows. [see reason](#miscellaneous)<br/>
 
