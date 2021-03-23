@@ -18,3 +18,10 @@ type VolatileWriter struct{
 func (vw *VolatileWriter) Write (p []byte) (n int, e error){
 	return vw.Destination.Write(p)
 }
+//
+//type VolatileReader struct{
+//	Source interface{Read (p []byte) (n int, e error)}
+//}
+//func (vr *VolatileReader) Read (p []byte) (n int, e error){
+//	return vr.Source.Read(p)
+//}

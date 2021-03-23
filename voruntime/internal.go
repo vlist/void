@@ -9,8 +9,11 @@ import (
 	"strings"
 	"void/vokernel"
 )
-
-var shmap=map[string]*net.Listener{}
+type ListenerContext struct{
+	Listener *net.Listener
+	Flags string
+}
+var shmap=make(map[string]ListenerContext)
 var internal map[string]func(*vokernel.ProcContext)
 func InitInternal(){
 	internal=map[string]func(*vokernel.ProcContext){
@@ -25,18 +28,20 @@ func InitInternal(){
 		},
 		"shutil": func(pctx *vokernel.ProcContext){
 			rcsockid:="unix:"+RC["socket"]
-			usage:=`usage [--options network:address]
+			usage:=`usage [--options network:address] [--tls]
+options:
 	--open: create a new shell socket server
 	--kill: close specific socket server
 	--list: list all shell socket server
-
-`
+--tls:
+	serve over TLS`
 			if len(pctx.Args) ==0{
 				pctx.Shell.Output(usage)
 				return
 			}
 			switch pctx.Args[0]{
 			case "--open":{
+				var flag=""
 				if len(pctx.Args)<2{
 					pctx.Shell.Output("invalid arguments\n")
 					pctx.Shell.Output(usage)
@@ -59,14 +64,29 @@ func InitInternal(){
 					pctx.Shell.Output("network "+network+" not supported\n")
 				}
 				}
+				var l *net.Listener
+				var e error
+				//if len(pctx.Args)>=3 && pctx.Args[2]=="--ecdhe-aes"{
+				//	println("starting server using ecdhe-aes")
+				//	l,e= Startserver_ECDHE_AES(network,address)
+				//}else
+				if len(pctx.Args)>=3 && pctx.Args[2]=="--tls" {
+					flag+="tls "
+					println("starting server using TLS")
+					l,e= Startserver_TLS(network,address)
+				}else{
+					l,e= Startserver(network,address)
+				}
 
-				l,e:= Startserver(network,address)
 				if e!=nil{
 					pctx.Shell.Output("opening shell on socket "+sockid+" failed\n")
 					log.Print(e)
 					return
 				}
-				shmap[sockid]=l
+				shmap[sockid]=ListenerContext{
+					Listener: l,
+					Flags:    flag,
+				}
 			}
 			case "--kill":{
 				if len(pctx.Args)<2{
@@ -79,22 +99,23 @@ func InitInternal(){
 					pctx.Shell.Output("could not operate on default socket\n")
 					return
 				}
-				l:=shmap[sockid]
-				if *l!=nil{
-					e:=(*l).Close()
+				if l,ok:=shmap[sockid];ok{
+					e:=(*l.Listener).Close()
 					if e!=nil{
 						pctx.Shell.Output("closing shell on socket "+sockid+" failed\n")
 						log.Print(e)
 						return
 					}
 					delete(shmap,sockid)
+				}else{
+					pctx.Shell.Output("closing shell on socket "+sockid+" failed: listener not found\n")
 				}
 			}
 			case "--list":{
 				pctx.Shell.Output("opening socket shell: \n")
-				pctx.Shell.Output(rcsockid+" (default)\n")
-				for k,_ := range(shmap){
-					pctx.Shell.Output(k+"\n")
+				pctx.Shell.Output(rcsockid+"\tdefault\n")
+				for k,v := range shmap {
+					pctx.Shell.Output(k+"\t"+v.Flags+"\n")
 				}
 			}
 			default:{

@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.11.2 (20A0319). [See update log](#update-log).<br/>
+Current version: 1.11.3 (20A0323). [See update log](#update-log).<br/>
 Author: jlywxy (ms2692848699@outlook.com)<br/><br/>
 IMPORTANT: this program now don't support Windows. [see reason](#miscellaneous)<br/>
 
@@ -26,10 +26,10 @@ $ ./void
 ```shell
 $ stty raw; nc -U ./voidsh
 ```
-### using socketterminal
-See https://github.com/jlywxy/socketterminal
+### using voidterminal
+See https://github.com/jlywxy/voidterminal
 ```shell
-$ ./socketterminal ./voidsh
+$ ./voidterminal unix:/path/to/voidsh-socket
 ```
 voidshell listen to one default unix socket connections only(when launching).<br/>
 To change that default unix socket file path, modify [configuration files](#shutil).</br>
@@ -58,6 +58,13 @@ Configuraton file: .vsrc
 }
 ```
 Plugin files should be located in path/root/ firectory.
+### server TLS certificate
+```json
+    {
+      "tls_config_pem": "cert/server.pem",
+      "tls_config_key": "cert/server.key"
+    }
+```
 
 ## plugin development
 Plugins are node.js script file,
@@ -144,16 +151,21 @@ README.md main.go   plugins    void.png  voidsh    vokernel  voruntime voshell
 Manage socket servers.<br/>
 ```shell
 void:>shutil
-usage [--options network address]
-  --open: create a new shell socket server
-  --kill: close specific socket server
-  --list: list all shell socket server
+usage [--options network:address] [--tls]
+options:
+	--open: create a new shell socket server
+	--kill: close specific socket server
+	--list: list all shell socket server
+--tls:
+	serve over TLS
 ```
 network: "tcp" or "unix"(unix socket).<br/>
 address: "ip:port" for "tcp", or socket filename for "unix".<br/><br/>
+To configure TLS certificate, see [TLS Certificate Configuration](#server-tls-certificate)
 Examples:<br/>
 Opening new socket servers:
 ```shell
+void:>shutil --open tcp:127.0.0.1:9001 --tls
 void:>shutil --open tcp:127.0.0.1:9001
 void:>shutil --open unix:/tmp/vssock1
 ```
@@ -165,7 +177,8 @@ List all opened socket server:
 ```shell
 void:>shutil --list
 opening socket shell: 
-unix:./voidsh (default)
+unix:./voidsh       default
+tcp:127.0.0.1:9000  tls
 tcp:127.0.0.1:9001
 unix:/tmp/vssock1
 ```
@@ -184,7 +197,13 @@ see in voruntime/internal.go
 * voidshell now DO NOT support windows, because voidshell use unix socket to listen and run initializing commands, while Windows don't support unix socket.
 
 ## update log
-1.11.2 (20A0319)  *Newest Alpha
+1.11.3 (20A0323) *Newest Alpha
+* added TLS support
+* internal code modifications:
+    * added `Startserver_TLS` func to `socketshell.go`
+    * modified internal command `shutil` to make available to open TLS socket server.</br>
+    
+1.11.2 (20A0319)  
 * added a configuration option to set plugin root directory, see [voidshell configuration](#configure-voidshell)
 * modified plugin calling conventions, see [plugin development](#plugin-development)
 * internal code modifications:
