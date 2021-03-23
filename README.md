@@ -24,7 +24,7 @@ $ ./void
 ## connect to voidshell
 ### using netcat
 ```shell
-$ stty raw; nc -U ./voidsh
+$ stty raw; nc -U /path/to/voidsh-socket
 ```
 ### using voidterminal
 See https://github.com/jlywxy/voidterminal
