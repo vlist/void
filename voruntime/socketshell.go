@@ -30,7 +30,7 @@ func Startserver(network string,path string) (*net.Listener,error){
 					//log.Print(e)
 					break
 				}
-				_,e=co.Write([]byte("\r\nconnected to void system socket shell\r\n\r\n"))
+				_,e=co.Write([]byte("\r\nconnected to voidshell\r\n\r\n"))
 				if e!=nil{
 					log.Print(e)
 					break
@@ -57,7 +57,7 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 					log.Print(e)
 					break
 				}
-				_,e=co.Write([]byte("\r\nconnected to void system socket shell\r\n\r\n"))
+				_,e=co.Write([]byte("\r\nconnected to voidshell\r\n\r\n"))
 				if e!=nil{
 					println("err when write")
 					log.Print(e)

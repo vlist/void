@@ -2,7 +2,7 @@
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
 Current version: 1.11.3 (20A0323). [See update log](#update-log).<br/>
-Author: jlywxy (ms2692848699@outlook.com)<br/><br/>
+Author: jlywxy (jlywxy@outlook.com)<br/><br/>
 IMPORTANT: this program now don't support Windows. [see reason](#miscellaneous)<br/>
 
 ## build voidshell
@@ -65,7 +65,7 @@ Plugin files should be located in path/root/ firectory.
       "tls_config_key": "cert/server.key"
     }
 ```
-
+IMPORTANT: cert files cert/server.* in this repository are self-signed and should NEVER be used in production mode. <br/>
 ## plugin development
 Plugins are node.js script file,
 located in plugin/root directory.
