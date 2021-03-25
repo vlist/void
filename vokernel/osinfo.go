@@ -21,7 +21,7 @@ func getCwd() string{
 func GetOSInfo() OSInfo {
 	return OSInfo{
 		VoVersion:               "1.11.3 (20A0323)",
-		GoVersion:               "go1.15.6 darwin/amd64",
+		GoVersion:               runtime.Version()+" "+runtime.GOARCH,
 		CurrentWorkingDirectory: getCwd(),
 		SystemArch:              runtime.GOOS+"/"+runtime.GOARCH,
 	}
