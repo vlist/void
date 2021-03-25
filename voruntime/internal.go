@@ -3,9 +3,7 @@ package voruntime
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
 	"net"
-	"os"
 	"strings"
 	"void/vokernel"
 )
@@ -13,123 +11,26 @@ type ListenerContext struct{
 	Listener *net.Listener
 	Flags string
 }
-var shmap=make(map[string]ListenerContext)
-var internal map[string]func(*vokernel.ProcContext)
-func InitInternal(){
-	internal=map[string]func(*vokernel.ProcContext){
 
+var internal map[string]func(*ProcContext)
+func InitInternal(){
+	internal=map[string]func(*ProcContext){
+		"shadow": internal_shadow,
 		"info": internal_info,
-		"exit": func(pctx *vokernel.ProcContext) {
-			pctx.Shell.Writer.Close()
+		"exit": func(pctx *ProcContext) {
+			terminal_dispose(pctx.Terminal)
 		},
 		"sudo": internal_sudo,
-		"unsudo": func(pctx *vokernel.ProcContext) {
-			pctx.Shell.Privileged=false
+		"unsudo": func(pctx *ProcContext) {
+			pctx.Terminal.Privileged=false
 		},
-		"shutil": func(pctx *vokernel.ProcContext){
-			rcsockid:="unix:"+RC["socket"]
-			usage:=`usage [--options network:address] [--tls]
-options:
-	--open: create a new shell socket server
-	--kill: close specific socket server
-	--list: list all shell socket server
---tls:
-	serve over TLS`
-			if len(pctx.Args) ==0{
-				pctx.Shell.Output(usage)
-				return
-			}
-			switch pctx.Args[0]{
-			case "--open":{
-				var flag=""
-				if len(pctx.Args)<2{
-					pctx.Shell.Output("invalid arguments\n")
-					pctx.Shell.Output(usage)
-					return
-				}
-				sockid:=pctx.Args[1]
-				if sockid==rcsockid{
-					pctx.Shell.Output("could not operate on default socket\n")
-					return
-				}
-				na:=strings.Split(sockid,":")
-				network:=na[0]
-				address:=strings.Join(na[1:],":")
-				switch network{
-				case "tcp":{}
-				case "unix":{
-					os.RemoveAll(address)
-				}
-				default:{
-					pctx.Shell.Output("network "+network+" not supported\n")
-				}
-				}
-				var l *net.Listener
-				var e error
-				//if len(pctx.Args)>=3 && pctx.Args[2]=="--ecdhe-aes"{
-				//	println("starting server using ecdhe-aes")
-				//	l,e= Startserver_ECDHE_AES(network,address)
-				//}else
-				if len(pctx.Args)>=3 && pctx.Args[2]=="--tls" {
-					flag+="tls "
-					println("starting server using TLS")
-					l,e= Startserver_TLS(network,address)
-				}else{
-					l,e= Startserver(network,address)
-				}
-
-				if e!=nil{
-					pctx.Shell.Output("opening shell on socket "+sockid+" failed\n")
-					log.Print(e)
-					return
-				}
-				shmap[sockid]=ListenerContext{
-					Listener: l,
-					Flags:    flag,
-				}
-			}
-			case "--kill":{
-				if len(pctx.Args)<2{
-					pctx.Shell.Output("invalid arguments\n")
-					pctx.Shell.Output(usage)
-					return
-				}
-				sockid:=pctx.Args[1]
-				if sockid==rcsockid{
-					pctx.Shell.Output("could not operate on default socket\n")
-					return
-				}
-				if l,ok:=shmap[sockid];ok{
-					e:=(*l.Listener).Close()
-					if e!=nil{
-						pctx.Shell.Output("closing shell on socket "+sockid+" failed\n")
-						log.Print(e)
-						return
-					}
-					delete(shmap,sockid)
-				}else{
-					pctx.Shell.Output("closing shell on socket "+sockid+" failed: listener not found\n")
-				}
-			}
-			case "--list":{
-				pctx.Shell.Output("opening socket shell: \n")
-				pctx.Shell.Output(rcsockid+"\tdefault\n")
-				for k,v := range shmap {
-					pctx.Shell.Output(k+"\t"+v.Flags+"\n")
-				}
-			}
-			default:{
-				pctx.Shell.Output("invalid arguments\n")
-				pctx.Shell.Output(usage)
-				return
-			}
-
-			}
-
+		"shutil": internal_shutil,
+		"_stop_repl":func(pctx *ProcContext) {
+			pctx.Terminal.StopREPL()
 		},
 	}
 }
-func internal_info(pctx *vokernel.ProcContext){
+func internal_info(pctx *ProcContext){
 	var printLogo bool=true
 	var printExecContext bool=true
 	for _,v:=range pctx.Args{
@@ -150,7 +51,7 @@ func internal_info(pctx *vokernel.ProcContext){
      <vft green bold>void</vft>:<vft blue bold>></vft>void --everything
 
 `
-		pctx.Shell.Output(vokernel.Format(logo))
+		pctx.Terminal.Output(vokernel.Format(logo))
 	}
 	info:= vokernel.GetOSInfo()
 	var formattedInfo=""
@@ -158,36 +59,42 @@ func internal_info(pctx *vokernel.ProcContext){
 	formattedInfo+="    Golang Version: "+info.GoVersion+"\n"
 	formattedInfo+="    Current Working Directory: "+info.CurrentWorkingDirectory+"\n"
 	formattedInfo+="    System Arch: "+info.SystemArch+"\n"
-	pctx.Shell.Output(vokernel.Format(formattedInfo))
+	pctx.Terminal.Output(vokernel.Format(formattedInfo))
 	if printExecContext {
 		var formattedExecContext string = ""
 		formattedExecContext += "<vft bold>Process Context(pctx):</vft>\n"
 		formattedExecContext += "    Command Name: " + pctx.CommandName + "\n"
 		formattedExecContext += "    Arguments: " + "[" + strings.Join(pctx.Args, ",") + "]" + "\n"
-		formattedExecContext += "    Shell Context(sctx): " + "\n"
-		formattedExecContext += "        Terminal Name: " + pctx.Shell.Name + "\n"
+		formattedExecContext += "    Terminal Context(tctx): " + "\n"
+		formattedExecContext += "        Shell Interface: " + pctx.Terminal.ShellName + "\n"
+		formattedExecContext += "        Terminal Name: " + pctx.Terminal.TerminalName + "\n"
 		formattedExecContext += "        Privileged: " + (func() string {
-			if pctx.Shell.Privileged {
+			if pctx.Terminal.Privileged {
 				return "true"
 			} else {
 				return "false"
 			}
 		})() + "\n"
-		pctx.Shell.Output(vokernel.Format(formattedExecContext))
+		pctx.Terminal.Output(vokernel.Format(formattedExecContext))
 	}
 }
-func internal_sudo(pctx *vokernel.ProcContext){
-	pctx.Shell.Output("sudo: input password\n")
-	ipwd,_:=pctx.Shell.InputPassword("")
+func internal_sudo(pctx *ProcContext){
+	pctx.Terminal.Output("sudo: input password\n")
+	ipwd,_:=pctx.Terminal.InputPassword("")
 	h:=sha256.New()
 	h.Write(ipwd)
 	ipwden:=hex.EncodeToString(h.Sum(nil))
 	if RC["password_encrypted"]==ipwden{
-		pctx.Shell.Privileged=true
-		pctx.Shell.Output("sudo: success\n")
+		pctx.Terminal.Privileged=true
+		pctx.Terminal.Output("sudo: success\n")
 		return
 	}else{
-		pctx.Shell.Output("sudo: authentication failed\n")
+		pctx.Terminal.Output("sudo: authentication failed\n")
 	}
 }
 
+func terminal_dispose(tctx *TerminalContext){
+	//detach shadow if exists
+	disconnectshadow(tctx)
+	tctx.Disconnect()
+}

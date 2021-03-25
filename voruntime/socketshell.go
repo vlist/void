@@ -2,20 +2,28 @@ package voruntime
 
 import (
 	"crypto/tls"
+	"github.com/go-basic/uuid"
 	"io"
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"void/vokernel"
 )
 
-var pa string
+var termmap=make(map[string]*TerminalContext)
+
 func InitSocket(){
-	pa = RC["socket"]
+	pa := RC["socket"]
 	println("listening: "+ pa)
 	os.RemoveAll(pa)
+	dir:=filepath.Dir(pa)
+	err:=os.MkdirAll(dir,0770)
+	if err!=nil{
+		println("checking directory failed: "+dir)
+		return
+	}
 	Startserver("unix",pa)
-	//Startserver_ECDHE_AES("unix",pa)
 }
 func Startserver(network string,path string) (*net.Listener,error){
 	l,e:=net.Listen(network,path)
@@ -71,32 +79,31 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 	}
 }
 func serve(co net.Conn,servername string){
-	rline,wline:=io.Pipe()
-	var vw=vokernel.VolatileWriter{Destination: wline}
+	stdinReader, socketStdinWriter:=io.Pipe()
+	//socketstdoutReader, stdoutWriter:=io.Pipe()
+	var stdinWriterVolatile=vokernel.VolatileWriter{Destination: socketStdinWriter}
+	termname:=uuid.New()
+	tctx:= TerminalContext{
+		RawConnection:					co,
+		StdinWriterSwitch:              &stdinWriterVolatile,
+		StdinReader:                    stdinReader,
+		StdoutWriter:                   co,//stdoutWriter,
+		Delim:                     		'\r',
+		Privileged:                		false,
+		ShellName:                      servername,
+		TerminalName: 					termname,
+	}
+	termmap[termname]=&tctx
 	go func(){
-		io.Copy(&vw,co)
+		io.Copy(&stdinWriterVolatile,co)  //socket write to stdin writer, shell read from stdin reader
 		println("disconnected")
+		delete(termmap,termname)
 	}()
-	sctx:=vokernel.ShellContext{
-		WriterSwitch:              &vw, //writer switch
-		Reader:                    rline,
-		Writer:                    co,
-		InternalWriterDestination: wline, //internal receiver
-		Delim:                     '\r',
-		Privileged:                false,
-		Name:                      servername,
-	}
-	Getsize(sctx)
-	for{
-		s,e:=sctx.Input(vokernel.Prompt(&sctx))
-		if e!=nil{
-			println("interrupted")
-			sctx.Writer.Close()
-			break
-		}
-		pctx:= PreProcess(s,&sctx)
-		Process(pctx)
-	}
+	//go func(){
+	//	io.Copy(co,socketstdoutReader)
+	//}()
+	//Getsize(tctx)
+	tctx.StartREPL()
 }
 //func Startserver_ECDHE_AES(network string,path string) (*net.Listener,error){
 //	l,e:=net.Listen(network,path)

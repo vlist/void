@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.11.3 (20A0323). [See update log](#update-log).<br/>
+Current version: 1.11.31 (20A0325d). [See update log](#update-log).<br/>
 Author: jlywxy (jlywxy@outlook.com)<br/><br/>
 IMPORTANT: this program now don't support Windows. [see reason](#miscellaneous)<br/>
 
@@ -130,16 +130,18 @@ void:>info
     |___/ \____//_/ \____/ (_) /_/ /_____/  
      void:>void --everything
 
-Void System 1.1
-    Golang Version: go1.15.6 darwin/amd64
-    Current Working Directory: *
+voidshell 1.11.3 (20A0323)
+    Golang Version: go1.16.2 amd64
+    Current Working Directory: /Users/jlywxy/go/src/void
     System Arch: darwin/amd64
 Process Context(pctx):
     Command Name: info
     Arguments: []
-    Shell Context(sctx): 
-        Terminal Name: *
+    Terminal Context(tctx): 
+        Shell Interface: unix:/Users/jlywxy/voidshell/vssock1
+        Terminal Name: 03546964-2b10-4445-0edd-31653f0a57e6
         Privileged: false
+
 ```
 ### exec
 Run bash commands in voidshell.
@@ -165,7 +167,7 @@ To configure TLS certificate, see [TLS Certificate Configuration](#server-tls-ce
 Examples:<br/>
 Opening new socket servers:
 ```shell
-void:>shutil --open tcp:127.0.0.1:9001 --tls
+void:>shutil --open tls:127.0.0.1:9001
 void:>shutil --open tcp:127.0.0.1:9001
 void:>shutil --open unix:/tmp/vssock1
 ```
@@ -178,11 +180,24 @@ List all opened socket server:
 void:>shutil --list
 opening socket shell: 
 unix:./voidsh       default
-tcp:127.0.0.1:9000  tls
+tls:127.0.0.1:9000  tls
 tcp:127.0.0.1:9001
 unix:/tmp/vssock1
 ```
 The default socket neither could be reopened nor be killed.
+### shadow 
+(*now in dev)</br>
+Project current terminal output to another terminal.The terminal that be projected is called "shadow terminal".<br/>
+"terminal-name" is terminal identifier which can be looked up in internal command [info](#info).<br/>
+Project:
+```shell
+void:>shadow --project terminal-name
+```
+Unlink shadow terminal:
+```shell
+void:>shadow --detach
+```
+
 ### exit
 Simply exit the shell(close current terminal only, won't shut down service).
 ```shell
@@ -197,7 +212,18 @@ see in voruntime/internal.go
 * voidshell now DO NOT support windows, because voidshell use unix socket to listen and run initializing commands, while Windows don't support unix socket.
 
 ## update log
-1.11.3 (20A0323) *Newest Alpha
+1.11.31 (20A0325d) *Newest Alpha-dev
+* issue fix
+    * automatically mkdir of directories in given unix socket file path which are not exist.
+* added internal command "shadow", see [shadow](#shadow).
+* added identifier for every terminal session(Terminal Name).
+* changed syntax of "shutil" to open a TLS server. See [shutil](#shutil).
+* internal code modifications:
+    * changed `ShellContext` to `TerminalContext` in all related code, which is making more sense.
+    * moved some code (terminalcontext.go, proccontext.go, etc) from `vokernel` layer to `voruntime` layer.<br/>
+    * changed `TerminalContext` structure.
+    
+1.11.3 (20A0323) 
 * added TLS support
 * internal code modifications:
     * added `Startserver_TLS` func to `socketshell.go`
