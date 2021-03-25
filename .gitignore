@@ -12,3 +12,9 @@
 *.test
 *.tmp
 
+# Binary
+void
+*sock*
+
+# Config files
+.vsrc
