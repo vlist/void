@@ -7,13 +7,19 @@ import (
 type ShadowState struct{
 	srcStdoutWriter io.WriteCloser
 	destTerminalName string
+	connected bool
 }
 var shadowstate=make(map[string]ShadowState)
 func internal_shadow(pctx *ProcContext) {
+	if len(pctx.Args)==0{
+		shadow_invalid_argument(pctx.Terminal)
+		return
+	}
 	switch pctx.Args[0] {
-	case "--project":{
-		if !(len(pctx.Args)>=2) {
+	case "-p","--project":{
+		if len(pctx.Args)<=1 {
 			shadow_invalid_argument(pctx.Terminal)
+			return
 		}
 		disconnectshadow(pctx.Terminal)
 
@@ -23,21 +29,22 @@ func internal_shadow(pctx *ProcContext) {
 			if v.TerminalName==termname{
 				v.Output("shadow connecting to: "+pctx.Terminal.TerminalName+"\n")
 				v.Output("--------SHADOW BEGINS--------\n\n")
-				v.StdinWriterSwitch.Destination.Write([]byte("_stop_repl\r\n\r\n"))
+				v.StdinWriterSwitch.Destination.Write([]byte("_stop_repl\r\n"))
+				//go io.Copy(pctx.Terminal.StdinWriterSwitch.Destination,v.StdinReader)
 
 				state:=ShadowState{
 					srcStdoutWriter: pctx.Terminal.StdoutWriter,
 					destTerminalName: v.TerminalName,
+					connected: true,
 				}
 				shadowstate[pctx.Terminal.TerminalName]=state
-				//pctx.Terminal.StdoutWriter=vokernel.BiWriteCloser(pctx.Terminal.StdoutWriter,v.StdoutWriter)
 				pctx.Terminal.StdoutWriter=vokernel.MultiWriteCloser(v.StdoutWriter,pctx.Terminal.StdoutWriter)
 				return
 			}
 		}
 		pctx.Terminal.Output("terminal not found")
 	}
-	case "--detach":{
+	case "-d","--detach":{
 		disconnectshadow(pctx.Terminal)
 	}
 	default:{
@@ -50,28 +57,26 @@ func disconnectshadow(tctx *TerminalContext){
 	if state,ok:=shadowstate[tctx.TerminalName];ok{
 		for _,v:=range termmap{
 			if v.TerminalName==state.destTerminalName{
-				tctx.Output("close existing shadow projector: "+v.TerminalName+"\n")
-				v.Output("\n\n--------SHADOW ENDS--------\n")
-				v.Output("shadow disconnecting from: "+tctx.TerminalName+"\n")
 				tctx.StdoutWriter=state.srcStdoutWriter
-				v.StartREPL()
-				v.StdinWriterSwitch.Destination.Write([]byte("\r\n\r\n"))
+				tctx.Output("close existing shadow projector: "+v.TerminalName+"\n")
+				v.Output("--------SHADOW ENDS--------\n")
+				v.Output("shadow disconnecting from: "+tctx.TerminalName+"\n")
+				go v.StartREPL()
+				go v.StdinWriterSwitch.Destination.Write([]byte("\r\n"))
+				delete(shadowstate,tctx.TerminalName)
 				return
 			}
 		}
 	}
-	delete(shadowstate,tctx.TerminalName)
 }
 func shadow_invalid_argument(tctx *TerminalContext){
-	tctx.Output("invalid argument")
-	usage := `usage [commands] [terminal name]
+	tctx.Output("invalid arguments\n")
+	usage := `usage [--commands] [terminal name]
 commands:
-	--attach
-		attach current terminal session to specific terminal
-	--detach
-		detach current terminal from specific terminal
-	--switch
-		reattach current terminal session to specific terminal
+	-p,--project [terminal name]
+		project current terminal session to specific terminal
+	-d,--detach
+		detach shadow terminal
 `
 	tctx.Output(usage)
 }

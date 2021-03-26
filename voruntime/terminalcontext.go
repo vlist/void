@@ -53,24 +53,32 @@ func (t*TerminalContext) Disconnect(){
 }
 func (t *TerminalContext) StartREPL(){
 	t.runningREPL=true
-	go func(tctx *TerminalContext){
-		for{
-			if !tctx.runningREPL{
-				break
-			}
-			s,e:=tctx.Input(Prompt(tctx))
-			if e!=nil{
-				println("interrupted")
-				tctx.StdoutWriter.Close()
-				break
-			}
-			pctx:= PreProcess(s,tctx)
-			Process(pctx)
+	for{
+		if !t.runningREPL{
+			break
 		}
-	}(t)
+		s,e:=t.Input(Prompt(t))
+		if e!=nil{
+			println("interrupted")
+			t.StdoutWriter.Close()
+			break
+		}
+		pctx:= PreProcess(s,t)
+		Process(pctx)
+	}
 }
 func (t *TerminalContext) StopREPL(){
 	t.runningREPL=false
+	go func(){
+		buf:=make([]byte,1)
+		for{
+			if t.runningREPL{
+				break
+			}
+			t.StdinReader.Read(buf)
+			t.StdoutWriter.Write(buf)
+		}
+	}()
 }
 
 

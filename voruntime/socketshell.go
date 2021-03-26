@@ -80,30 +80,26 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 }
 func serve(co net.Conn,servername string){
 	stdinReader, socketStdinWriter:=io.Pipe()
-	//socketstdoutReader, stdoutWriter:=io.Pipe()
-	var stdinWriterVolatile=vokernel.VolatileWriter{Destination: socketStdinWriter}
 	termname:=uuid.New()
+	var stdinWriterVolatile=vokernel.VolatileWriter{Destination: socketStdinWriter}
+	go func(){
+		io.Copy(&stdinWriterVolatile,co)  //socket write to stdin writer, shell read from stdin reader
+		println("disconnected")
+		delete(termmap,termname)
+	}()
+
 	tctx:= TerminalContext{
 		RawConnection:					co,
 		StdinWriterSwitch:              &stdinWriterVolatile,
 		StdinReader:                    stdinReader,
-		StdoutWriter:                   co,//stdoutWriter,
+		StdoutWriter:                   co,
 		Delim:                     		'\r',
 		Privileged:                		false,
 		ShellName:                      servername,
 		TerminalName: 					termname,
 	}
 	termmap[termname]=&tctx
-	go func(){
-		io.Copy(&stdinWriterVolatile,co)  //socket write to stdin writer, shell read from stdin reader
-		println("disconnected")
-		delete(termmap,termname)
-	}()
-	//go func(){
-	//	io.Copy(co,socketstdoutReader)
-	//}()
-	//Getsize(tctx)
-	tctx.StartREPL()
+	go tctx.StartREPL()
 }
 //func Startserver_ECDHE_AES(network string,path string) (*net.Listener,error){
 //	l,e:=net.Listen(network,path)
