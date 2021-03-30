@@ -1,9 +1,10 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.11.31 (20A0325d). [See update log](#update-log).<br/>
-Author: jlywxy (jlywxy@outlook.com)<br/><br/>
-IMPORTANT: this program now don't support Windows. [see reason](#miscellaneous)<br/>
+Current version: 1.11.4 (20A146). [See update log](#update-log).<br/>
+Author / Contributors: <a href="https://github.com/jlywxy">jlywxy</a>, <a href="https://github.com/vlist">vlist</a>.
+<br/><br/>
+This program now don't support Windows. [see reason](#miscellaneous)<br/>
 
 ## build voidshell
 ```shell
@@ -150,16 +151,17 @@ void:>exec ls
 README.md main.go   plugins    void.png  voidsh    vokernel  voruntime voshell
 ```
 ### shutil
+Command version 1.2.<br/>
 Manage socket servers.<br/>
 ```shell
 void:>shutil
-usage [--options network:address] [--tls]
+usage [--options network:address]
 options:
-	--open: create a new shell socket server
-	--kill: close specific socket server
-	--list: list all shell socket server
---tls:
-	serve over TLS
+	-o,--open [tls|tcp|unix:address:port]: 
+		create a new shell socket server
+	-k,--kill [tls|tcp|unix:address:port]: 
+		close specific socket server
+	-l,--list: list all shell socket server
 ```
 network: "tcp" or "unix"(unix socket).<br/>
 address: "ip:port" for "tcp", or socket filename for "unix".<br/><br/>
@@ -185,23 +187,43 @@ tcp:127.0.0.1:9001
 unix:/tmp/vssock1
 ```
 The default socket neither could be reopened nor be killed.
-### shadow 
-(*now in dev)</br>
+### shadow
+Command version 1.1.<br/>
 Project current terminal output to another terminal.The terminal that be projected is called "shadow terminal".<br/>
-"terminal-name" is terminal identifier which can be looked up in internal command [info](#info).<br/>
-Project:
+"terminal name" is terminal identifier which can be looked up in internal command [info](#info).<br/>
 ```shell
-void:>shadow --project terminal-name
+void:>shadow
+usage [--commands] [terminal name]
+commands:
+	-p,--project [terminal name]
+		project current terminal session to specific terminal
+	-d,--detach
+		detach shadow terminal
 ```
-Unlink shadow terminal:
+Examples:
+in main terminal:
 ```shell
+void:>shadow --project 3f35f171-eaf6-c9c0-3021-60049d96d4ba
 void:>shadow --detach
+close existing shadow projector: 3f35f171-eaf6-c9c0-3021-60049d96d4ba
 ```
+in shadow terminal:
+```shell
+shadow connecting to: 436605b1-06de-33ae-7a03-23aa03e361fa
+--------SHADOW BEGINS--------
 
+void:>_stop_repl
+void:>shadow --detach
+--------SHADOW ENDS--------
+shadow disconnecting from: 436605b1-06de-33ae-7a03-23aa03e361fa
+```
+```_stop_repl``` is a reserved internal command which is used to pause REPL of the current terminal.<br/>
+When terminal became a shadow terminal, its stdin will write to itself other than write to the main terminal, which means the shadow terminal could only see but not respond to anything.<br/>
 ### exit
-Simply exit the shell(close current terminal only, won't shut down service).
+Simply exit the terminal.
 ```shell
 void:>exit
+disconnected
 ```
 <br/>
 Other commands are now reserved for further development,<br/>
@@ -212,6 +234,16 @@ see in voruntime/internal.go
 * voidshell now DO NOT support windows, because voidshell use unix socket to listen and run initializing commands, while Windows don't support unix socket.
 
 ## update log
+1.11.4 (20A146) *Newest Alpha
+* changed command syntax of [shutil](#shutil) and [shadow](#shadow).
+* fixed bugs of command shadow.
+* internal code modification:
+    * made [shutil](#shutil) and [shadow](#shadow) case match long and short flags(eg: ```--detach```to```-d```)
+    * added function ```StartREPL``` and ```StopREPL``` to ```TerminalContext``` to make terminal REPL loop controllable.
+* version name rule changed: 1.11.4 (20A146) represents to: <br/>
+  major version 1; framework version 1, functions version 1; bugfix version 4, dev version 0(not a dev version); <br/>
+  build id: year 2020; state Alpha; build date(hex): 0x146 (hex(0326)). <br/>
+    
 1.11.31 (20A0325d) *Newest Alpha-dev
 * issue fix
     * automatically mkdir of directories in given unix socket file path which are not exist.

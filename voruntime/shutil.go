@@ -12,16 +12,15 @@ var shmap=make(map[string]ListenerContext)
 
 func internal_shutil(pctx *ProcContext) {
 	rcsockid := "unix:" + RC["socket"]
-
 	if len(pctx.Args) == 0 {
 		shutil_invalid_argument(pctx.Terminal)
 		return
 	}
 	switch pctx.Args[0] {
-	case "--open":
+	case "-o","--open":
 		{
 			var flag = ""
-			if len(pctx.Args) < 2 {
+			if len(pctx.Args) <=1 {
 				shutil_invalid_argument(pctx.Terminal)
 				return
 			}
@@ -73,9 +72,9 @@ func internal_shutil(pctx *ProcContext) {
 				Flags:    flag,
 			}
 		}
-	case "--kill":
+	case "-k","--kill":
 		{
-			if len(pctx.Args) < 2 {
+			if len(pctx.Args) <=1 {
 				shutil_invalid_argument(pctx.Terminal)
 				return
 			}
@@ -96,7 +95,7 @@ func internal_shutil(pctx *ProcContext) {
 				pctx.Terminal.Output("closing shell on socket " + sockid + " failed: listener not found\n")
 			}
 		}
-	case "--list":
+	case "-l","--list":
 		{
 			pctx.Terminal.Output("opening socket shell: \n")
 			pctx.Terminal.Output(rcsockid + "\tdefault\n")
@@ -113,14 +112,14 @@ func internal_shutil(pctx *ProcContext) {
 }
 
 func shutil_invalid_argument(tctx *TerminalContext){
-	tctx.Output("invalid argument")
-	usage := `usage [--options network:address] [--tls]
+	tctx.Output("invalid arguments\n")
+	usage := `usage [--options network:address]
 options:
-	--open: create a new shell socket server
-	--kill: close specific socket server
-	--list: list all shell socket server
---tls:
-	serve over TLS
+	-o,--open [tls|tcp|unix:address:port]: 
+		create a new shell socket server
+	-k,--kill [tls|tcp|unix:address:port]: 
+		close specific socket server
+	-l,--list: list all shell socket server
 `
 	tctx.Output(usage)
 }
