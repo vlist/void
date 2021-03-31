@@ -1,8 +1,6 @@
 package voruntime
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"net"
 	"strings"
 	"void/vokernel"
@@ -20,13 +18,12 @@ func InitInternal(){
 		"exit": func(pctx *ProcContext) {
 			terminal_dispose(pctx.Terminal)
 		},
-		"sudo": internal_sudo,
-		"unsudo": func(pctx *ProcContext) {
-			pctx.Terminal.Privileged=false
-		},
 		"shutil": internal_shutil,
 		"_stop_repl":func(pctx *ProcContext) {
 			pctx.Terminal.StopREPL()
+		},
+		"su": func(pctx *ProcContext) {
+
 		},
 	}
 }
@@ -67,34 +64,12 @@ func internal_info(pctx *ProcContext){
 		formattedExecContext += "    Arguments: " + "[" + strings.Join(pctx.Args, ",") + "]" + "\n"
 		formattedExecContext += "    Terminal Context(tctx): " + "\n"
 		formattedExecContext += "        Shell Interface: " + pctx.Terminal.ShellName + "\n"
-		formattedExecContext += "        Terminal Name: " + pctx.Terminal.TerminalName + "\n"
-		formattedExecContext += "        Privileged: " + (func() string {
-			if pctx.Terminal.Privileged {
-				return "true"
-			} else {
-				return "false"
-			}
-		})() + "\n"
+		formattedExecContext += "        Terminal ID: " + pctx.Terminal.TerminalID + "\n"
 		pctx.Terminal.Output(vokernel.Format(formattedExecContext))
-	}
-}
-func internal_sudo(pctx *ProcContext){
-	pctx.Terminal.Output("sudo: input password\n")
-	ipwd,_:=pctx.Terminal.InputPassword("")
-	h:=sha256.New()
-	h.Write(ipwd)
-	ipwden:=hex.EncodeToString(h.Sum(nil))
-	if RC["password_encrypted"]==ipwden{
-		pctx.Terminal.Privileged=true
-		pctx.Terminal.Output("sudo: success\n")
-		return
-	}else{
-		pctx.Terminal.Output("sudo: authentication failed\n")
 	}
 }
 
 func terminal_dispose(tctx *TerminalContext){
-	//detach shadow if exists
 	disconnectshadow(tctx)
 	tctx.Disconnect()
 }

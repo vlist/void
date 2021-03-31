@@ -12,6 +12,8 @@ type Terminal interface {
 	Output(content string)
 }
 
+var termmap=make(map[string]*TerminalContext)
+
 type TerminalContext struct {
 	RawConnection io.ReadWriteCloser
 	StdinReader io.ReadCloser
@@ -21,7 +23,7 @@ type TerminalContext struct {
 	Privileged bool
 	Delim byte
 	ShellName string
-	TerminalName string
+	TerminalID string
 	runningREPL bool
 }
 func (t *TerminalContext) RedirectStdinWriter(w io.Writer){
@@ -81,7 +83,16 @@ func (t *TerminalContext) StopREPL(){
 	}()
 }
 
-
+func clientHello(tctx *TerminalContext){
+	pctx:=ProcContext{
+		CommandName: "",
+		Args:        []string{},
+		Type:        "",
+		Terminal:    tctx,
+		OS:          vokernel.OSInfo{},
+	}
+	internal_info(&pctx)
+}
 
 func Prompt(tctx *TerminalContext)string{
 	if tctx.Privileged{

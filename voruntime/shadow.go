@@ -26,18 +26,18 @@ func internal_shadow(pctx *ProcContext) {
 		termname:=pctx.Args[1]
 
 		for _,v:=range termmap{
-			if v.TerminalName==termname{
-				v.Output("shadow connecting to: "+pctx.Terminal.TerminalName+"\n")
+			if v.TerminalID==termname{
+				v.Output("shadow connecting to: "+pctx.Terminal.TerminalID+"\n")
 				v.Output("--------SHADOW BEGINS--------\n\n")
 				v.StdinWriterSwitch.Destination.Write([]byte("_stop_repl\r\n"))
 				//go io.Copy(pctx.Terminal.StdinWriterSwitch.Destination,v.StdinReader)
 
 				state:=ShadowState{
 					srcStdoutWriter: pctx.Terminal.StdoutWriter,
-					destTerminalName: v.TerminalName,
+					destTerminalName: v.TerminalID,
 					connected: true,
 				}
-				shadowstate[pctx.Terminal.TerminalName]=state
+				shadowstate[pctx.Terminal.TerminalID]=state
 				pctx.Terminal.StdoutWriter=vokernel.MultiWriteCloser(v.StdoutWriter,pctx.Terminal.StdoutWriter)
 				return
 			}
@@ -54,16 +54,16 @@ func internal_shadow(pctx *ProcContext) {
 
 }
 func disconnectshadow(tctx *TerminalContext){
-	if state,ok:=shadowstate[tctx.TerminalName];ok{
+	if state,ok:=shadowstate[tctx.TerminalID];ok{
 		for _,v:=range termmap{
-			if v.TerminalName==state.destTerminalName{
+			if v.TerminalID==state.destTerminalName{
 				tctx.StdoutWriter=state.srcStdoutWriter
-				tctx.Output("close existing shadow projector: "+v.TerminalName+"\n")
+				tctx.Output("close existing shadow projector: "+v.TerminalID+"\n")
 				v.Output("--------SHADOW ENDS--------\n")
-				v.Output("shadow disconnecting from: "+tctx.TerminalName+"\n")
+				v.Output("shadow disconnecting from: "+tctx.TerminalID+"\n")
 				go v.StartREPL()
 				go v.StdinWriterSwitch.Destination.Write([]byte("\r\n"))
-				delete(shadowstate,tctx.TerminalName)
+				delete(shadowstate,tctx.TerminalID)
 				return
 			}
 		}

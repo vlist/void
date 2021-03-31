@@ -1,15 +1,21 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.11.4 (20A146). [See update log](#update-log).<br/>
+Current version: 1.12.01 (20A14bd). [See update log](#update-log).<br/>
 Author / Contributors: <a href="https://github.com/jlywxy">jlywxy</a>, <a href="https://github.com/vlist">vlist</a>.
 <br/><br/>
-This program now don't support Windows. [see reason](#miscellaneous)<br/>
+This program now don't support Windows. [see reason](#windows-no)<br/>
 
+## prerequisite
+python3 and python3-dev should be installed.<br/>
+package for Ubuntu: python3-dev<br/>
+for CentOS: python3-devel<br/>
+for Mac OS: (no need to install -dev)
+
+node.js over 15.0.0 should be installed.<br/>
 ## build voidshell
 ```shell
-$ go clean
-$ go build
+$ ./build.sh
 ```
 ## launch voidshell
 ```shell
@@ -21,41 +27,47 @@ $ screen -R voidsh
 $ ./void
 ```
 ...or make a voidshell.service file to let systemctl manage voidshell service on linux.
+## develop voidshell by Goland
+If using Goland:
+try Run directly. 
+If `pkg-config: exit status 1`: run 
+```
+$ ./cgo-cpython-tool.sh
+
+
+...
+...
+------------------------------
+(if needed) Set in .bash_profile or Goland Run/Debug Configuration -> Environment:
+PKG_CONFIG_PATH=/
+
+Put in plugin.go file:
+#cgo pkg-config: python3
+------------------------------
+```
+Set `#cgo pkg-config` in voruntime/plugin.go and PKG_CONFIG_PATH shown in the result to Goland Run/Debug Configurations -> Environment
 
 ## connect to voidshell
-### using netcat
-```shell
-$ stty raw; nc -U /path/to/voidsh-socket
-```
 ### using voidterminal
 See https://github.com/jlywxy/voidterminal
 ```shell
-$ ./voidterminal unix:/path/to/voidsh-socket
+$ ./voidterminal unix:/tmp/vssock1
 ```
-voidshell listen to one default unix socket connections only(when launching).<br/>
-To change that default unix socket file path, modify [configuration files](#shutil).</br>
-For multiple kind of terminal connecting concurrently, use that default socket to configure, see builtin command [shutil](#shutil).
+### using netcat
+```shell
+$ stty raw; nc -U /tmp/vssock1; stty -raw
+```
+voidshell open one default unix socket (/tmp/vssock1) server only when launching.<br/>
+To change that default socket path, modify [configuration files](#shutil).</br>
+When connected, use builtin command [shutil](#shutil) to open other unix,tcp or tls shell servers.
 
 ## configure voidshell
-Configuraton file: .vsrc
+Configuraton file: vsrc.json
 ### socket file path
 <span id="conffile.sock"></span>
 ```json
 {
-  "socket": "./socketfile"
-}
-```
-### password for internal command "sudo"
-"password_encrypted" should be sha256 encrypted.
-```json
-{
-  "password_encrypted": "sha256(password)"
-}
-```
-### plugin root directory
-```json
-{
-  "plugin_root": "path"
+  "socket": "./tmp/vssock1"
 }
 ```
 Plugin files should be located in path/root/ firectory.
@@ -68,46 +80,28 @@ Plugin files should be located in path/root/ firectory.
 ```
 IMPORTANT: cert files cert/server.* in this repository are self-signed and should NEVER be used in production mode. <br/>
 ## plugin development
-Plugins are node.js script file,
+Plugins are python3 script file,
 located in plugin/root directory.
 ### create a plugin
-Create a javascript file located in plugin/root directory.<br/>
+Create a python file located in plugin/root directory.<br/>
 Plugin template is shown below:
-```javascript
-/*init code,do not modify*/
-var ctx={};module.exports={ init: (_ctx)=>{ctx=_ctx}, run: main }
+```
+#DO NOT modify "init"
+def init(sctx):
+    global ctx
+    ctx=sctx
 
-function main(){
-    ctx.print("Hello void.")
-    ctx.exit()
-}
+def main(args):
+    ctx.print("Hello void.\n")
 ```
 Plugin entrypoint is function main.
 ### using plugin
 Simply type plugin name and arguments in voidshell.
 ```shell
-void:>plugins-name
+void:>plugin
 Hello void.
 ```
-### calling convention
 
-Data comes with `ctx`: 
-* plugin name and arguments: <br/>
-   `ctx.args=[plugin_name, plugin_arg1, plugin_arg2, ...]`
-* plugin root directory: <br/>
-   `ctx.pwd="./plugins/root"`
-* input: <br/>
-   `ctx.input(prompt,callback_func)`
-* output: <br/>
-  output a string:
-   `ctx.print(content)`<br/>
-  output a VFT formatted string:
-   `ctx.printf(content)`<br/>
-* void format text transformer: <br/>
-   `ctx.format(text)`
-* exit the plugin: <br/>
-  `ctx.exit()`
-  
 ### void format text(VFT)
 * Converts vft tag to VT100 terminal colors.
 * Only supports forecolor and bold format.
@@ -231,9 +225,18 @@ see in voruntime/internal.go
 
 ## miscellaneous
 * voidshell and socketterminal(https://github.com/jlywxy/socketterminal) use the protocol of VT100 terminal.
-* voidshell now DO NOT support windows, because voidshell use unix socket to listen and run initializing commands, while Windows don't support unix socket.
-
+### Windows, NO
+* voidshell now DO NOT support windows, because
+    1. voidshell use unix socket to listen configuration terminal session when launching, 
+    while Windows don't support unix socket.
+    2. voidshell build tool now can only run on *nix system.
+    3. voidshell running in WSL have not been tested.
+    
 ## update log
+1.12.01 (20A14bd) *Newest Alpha-dev
+* plugin now base on cgo python3, which is experimental.
+* a new build tool is used. (./build.sh)
+
 1.11.4 (20A146) *Newest Alpha
 * changed command syntax of [shutil](#shutil) and [shadow](#shadow).
 * fixed bugs of command shadow.
@@ -244,7 +247,7 @@ see in voruntime/internal.go
   major version 1; framework version 1, functions version 1; bugfix version 4, dev version 0(not a dev version); <br/>
   build id: year 2020; state Alpha; build date(hex): 0x146 (hex(0326)). <br/>
     
-1.11.31 (20A0325d) *Newest Alpha-dev
+1.11.31 (20A0325d) 
 * issue fix
     * automatically mkdir of directories in given unix socket file path which are not exist.
 * added internal command "shadow", see [shadow](#shadow).

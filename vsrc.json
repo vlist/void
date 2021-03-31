@@ -1,0 +1,5 @@
+{
+    "socket": "/tmp/vssock1",
+    "tls_config_pem": "cert/server.pem",
+    "tls_config_key": "cert/server.key"
+}

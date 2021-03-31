@@ -9,7 +9,7 @@ import (
 
 var RC map[string]string
 func Initrc(){
-	file,err:=os.Open(".vsrc")
+	file,err:=os.Open("vsrc.json")
 	if err!=nil{
 		log.Fatal(err)
 	}

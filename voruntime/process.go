@@ -23,7 +23,10 @@ func PreProcess(command string, sctx *TerminalContext) ProcContext {
 	return pctx
 }
 func Process(pctx ProcContext){
-	println("process: "+pctx.CommandName+" "+pctx.Type+" from "+pctx.Terminal.TerminalName)
+	if strings.TrimSpace(pctx.CommandName)==""{
+		return
+	}
+	println("process: "+pctx.CommandName+" "+pctx.Type+" from "+pctx.Terminal.TerminalID)
 	if pctx.CommandName==""{
 		return
 	}
@@ -40,8 +43,9 @@ func Process(pctx ProcContext){
 				pctx.Terminal.Output("command not found\n")
 			}}
 	case "plugin":{
-		args:=append([]string{"./plugins/plugin_init.js", RC["plugin_root"], pctx.CommandName},pctx.Args...)
-		Exec(pctx.Terminal,"node",args...)
+		//args:=append([]string{"./plugins/plugin_init.js", RC["plugin_root"], pctx.CommandName},pctx.Args...)
+		//Exec(pctx.Terminal,"node",args...)
+		Plugin_Process(pctx)
 		//BashExec("node "+RC["plugin_root"]+"/plugin_init.js "+pctx.CommandName+" "+strings.Join(pctx.Args," "),pctx.Shell)
 	}
 	}

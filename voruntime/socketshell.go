@@ -11,7 +11,7 @@ import (
 	"void/vokernel"
 )
 
-var termmap=make(map[string]*TerminalContext)
+
 
 func InitSocket(){
 	pa := RC["socket"]
@@ -71,7 +71,7 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 					log.Print(e)
 					//break
 				}
-				go serve(co,network+":"+path)
+				go serve(co,"tls:"+path)
 			}
 			println("tls accept stopped")
 		}()
@@ -80,12 +80,12 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 }
 func serve(co net.Conn,servername string){
 	stdinReader, socketStdinWriter:=io.Pipe()
-	termname:=uuid.New()
+	termid:=uuid.New()
 	var stdinWriterVolatile=vokernel.VolatileWriter{Destination: socketStdinWriter}
 	go func(){
 		io.Copy(&stdinWriterVolatile,co)  //socket write to stdin writer, shell read from stdin reader
 		println("disconnected")
-		delete(termmap,termname)
+		delete(termmap,termid)
 	}()
 
 	tctx:= TerminalContext{
@@ -96,9 +96,10 @@ func serve(co net.Conn,servername string){
 		Delim:                     		'\r',
 		Privileged:                		false,
 		ShellName:                      servername,
-		TerminalName: 					termname,
+		TerminalID: 					termid,
 	}
-	termmap[termname]=&tctx
+	termmap[termid]=&tctx
+	clientHello(&tctx)
 	go tctx.StartREPL()
 }
 //func Startserver_ECDHE_AES(network string,path string) (*net.Listener,error){
