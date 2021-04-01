@@ -1,34 +1,29 @@
 {
-  "user_groups": [
-    {
-      "admin": [
-        {
-          "admin": {
-            "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          },
-          "jlywxy": {
-            "password_encrypted": "12feff54ceeed7f513a14141007c42acf88ca138b662e320548a389de796ae41"
-          }
-        }
-      ],
-      "guest": [
-        {
-          "test": {
-            "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-          }
-        }
-      ]
-    }
-  ],
-  "group_permission": [
-    {
-      "admin": {"internal":"","exec":"","plugins":""}
+  "user_groups":
+  {
+    "admin": {
+      "admin": {
+        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "jlywxy": {
+        "password_encrypted": "12feff54ceeed7f513a14141007c42acf88ca138b662e320548a389de796ae41"
+      }
     },
-    {
-      "dmz": {"internal":"","exec":"-","plugins":""}
+    "dmz": {
+      "test": {
+        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
     },
-    {
-      "guest": {"internal":"-,info,shadow","exec":"-","plugins":"-"}
+    "guest": {
+      "guest": {
+        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
     }
-  ]
+  },
+  "group_permission":
+  {
+    "admin": {"internal":"","exec":"","plugins":""},
+    "dmz": {"internal":"","exec":"-","plugins":""},
+    "guest": {"internal":"-,info,su,exit","exec":"-","plugins":"-"}
+  }
 }

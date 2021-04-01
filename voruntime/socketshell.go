@@ -43,7 +43,12 @@ func Startserver(network string,path string) (*net.Listener,error){
 					log.Print(e)
 					break
 				}
-				go serve(co,network+":"+path)
+				if network=="unix"{
+					go serve(co,network+":"+path,true)
+				}else{
+					go serve(co,network+":"+path,false)
+				}
+
 			}
 		}()
 		return &l, e
@@ -71,14 +76,14 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 					log.Print(e)
 					//break
 				}
-				go serve(co,"tls:"+path)
+				go serve(co,"tls:"+path,true)
 			}
 			println("tls accept stopped")
 		}()
 		return &l, e
 	}
 }
-func serve(co net.Conn,servername string){
+func serve(co net.Conn,servername string,secured bool){
 	stdinReader, socketStdinWriter:=io.Pipe()
 	termid:=uuid.New()
 	var stdinWriterVolatile=vokernel.VolatileWriter{Destination: socketStdinWriter}
@@ -87,16 +92,17 @@ func serve(co net.Conn,servername string){
 		println("disconnected")
 		delete(termmap,termid)
 	}()
-
+	uctx,_:= Login("guest","guest","")
 	tctx:= TerminalContext{
 		RawConnection:					co,
 		StdinWriterSwitch:              &stdinWriterVolatile,
 		StdinReader:                    stdinReader,
 		StdoutWriter:                   co,
 		Delim:                     		'\r',
-		Privileged:                		false,
+		Secured:                		secured,
 		ShellName:                      servername,
 		TerminalID: 					termid,
+		User: &uctx,
 	}
 	termmap[termid]=&tctx
 	clientHello(&tctx)

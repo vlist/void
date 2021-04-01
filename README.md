@@ -79,6 +79,45 @@ Plugin files should be located in path/root/ firectory.
     }
 ```
 IMPORTANT: cert files cert/server.* in this repository are self-signed and should NEVER be used in production mode. <br/>
+## Configure users and permission
+User and Permission Filter scheme is helpful to avoid attackers to harm the host via voidshell.
+User data are stored in users.json.<br/>
+Every user has its group, which is easy to control Permission.<br/>
+Permission Filter Syntax:<br/>
+`""` for all granted,<br/>
+`"-"` for all denied,</br>
+`"-shadow"` for denying access to `shadow`<br/>
+`"-,shutil"` for denying all, then allow `shutil`<br/>
+Permission Layer: internal(I),exec(E),plugin(P)<br/>
+Note: Exec Permission should be `""`(all granted) or `"-"`(all denied) ONLY, <br/>
+because `exec` parameters are directly passed to /bin/bash, void interpreter cannot analyse what processes are being spawned. (user may use `;`,`&`,`&&`,`|`,`screen`,etc to spawn multiple process in single line; user also could spawn another shell to avoid the permission filtering.).<br/>
+<br/>
+Example:<br/>
+```json
+{
+  "user_groups":
+  {
+    "admin": {
+      "admin": {
+        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "jlywxy": {
+        "password_encrypted": "12feff54ceeed7f513a14141007c42acf88ca138b662e320548a389de796ae41"
+      }
+    },
+    "guest": {
+      "guest": {
+        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "group_permission":
+  {
+    "admin": {"internal":"","exec":"","plugins":""},
+    "guest": {"internal":"-,info,su,exit","exec":"-","plugins":"-"}
+  }
+}
+```
 ## plugin development
 Plugins are python3 script file,
 located in plugin/root directory.
@@ -98,7 +137,7 @@ Plugin entrypoint is function main.
 ### using plugin
 Simply type plugin name and arguments in voidshell.
 ```shell
-void:>plugin
+void:> plugin
 Hello void.
 ```
 
@@ -116,7 +155,7 @@ Hello void.
 ### info
 Displays os info and shell/terminal info.
 ```shell
-void:>info
+void:admin# info
 
                     _      __  __           
      _   __ ____   (_) ___/ / _\ \          
@@ -125,30 +164,31 @@ void:>info
     |___/ \____//_/ \____/ (_) /_/ /_____/  
      void:>void --everything
 
-voidshell 1.11.3 (20A0323)
-    Golang Version: go1.16.2 amd64
-    Current Working Directory: /Users/jlywxy/go/src/void
-    System Arch: darwin/amd64
+voidshell 1.12.01 (20A191d)
+   Runtime/System Arch: go1.16.2 darwin/amd64
 Process Context(pctx):
-    Command Name: info
-    Arguments: []
-    Terminal Context(tctx): 
-        Shell Interface: unix:/Users/jlywxy/voidshell/vssock1
-        Terminal Name: 03546964-2b10-4445-0edd-31653f0a57e6
-        Privileged: false
+├─ Command Name: info
+├─ Arguments: []
+└─ Terminal Context(tctx):
+   ├─ Shell Interface: unix:/tmp/vssock1
+   ├─ Terminal ID: 11bec1e0-683e-af5e-8e6a-67b4d9bfba4b
+   ├─ Transmission Secured: true
+   └─ User Context(uctx):
+      ├─ User Identifier: admin:admin
+      └─ Permissions: I(),E(),P(): all granted
 
 ```
 ### exec
 Run bash commands in voidshell.
 ```shell
-void:>exec ls
+void:> exec ls
 README.md main.go   plugins    void.png  voidsh    vokernel  voruntime voshell
 ```
 ### shutil
 Command version 1.2.<br/>
 Manage socket servers.<br/>
 ```shell
-void:>shutil
+void:> shutil
 usage [--options network:address]
 options:
 	-o,--open [tls|tcp|unix:address:port]: 
@@ -163,17 +203,17 @@ To configure TLS certificate, see [TLS Certificate Configuration](#server-tls-ce
 Examples:<br/>
 Opening new socket servers:
 ```shell
-void:>shutil --open tls:127.0.0.1:9001
-void:>shutil --open tcp:127.0.0.1:9001
-void:>shutil --open unix:/tmp/vssock1
+void:> shutil --open tls:127.0.0.1:9001
+void:> shutil --open tcp:127.0.0.1:9001
+void:> shutil --open unix:/tmp/vssock1
 ```
 Close a socket server:
 ```shell
-void:>shutil --kill unix:/tmp/vssock1
+void:> shutil --kill unix:/tmp/vssock1
 ````
 List all opened socket server:
 ```shell
-void:>shutil --list
+void:> shutil --list
 opening socket shell: 
 unix:./voidsh       default
 tls:127.0.0.1:9000  tls
@@ -186,7 +226,7 @@ Command version 1.1.<br/>
 Project current terminal output to another terminal.The terminal that be projected is called "shadow terminal".<br/>
 "terminal name" is terminal identifier which can be looked up in internal command [info](#info).<br/>
 ```shell
-void:>shadow
+void:> shadow
 usage [--commands] [terminal name]
 commands:
 	-p,--project [terminal name]
@@ -197,8 +237,8 @@ commands:
 Examples:
 in main terminal:
 ```shell
-void:>shadow --project 3f35f171-eaf6-c9c0-3021-60049d96d4ba
-void:>shadow --detach
+void:> shadow --project 3f35f171-eaf6-c9c0-3021-60049d96d4ba
+void:> shadow --detach
 close existing shadow projector: 3f35f171-eaf6-c9c0-3021-60049d96d4ba
 ```
 in shadow terminal:
@@ -206,13 +246,20 @@ in shadow terminal:
 shadow connecting to: 436605b1-06de-33ae-7a03-23aa03e361fa
 --------SHADOW BEGINS--------
 
-void:>_stop_repl
-void:>shadow --detach
+void:> _stop_repl
+void:> shadow --detach
 --------SHADOW ENDS--------
 shadow disconnecting from: 436605b1-06de-33ae-7a03-23aa03e361fa
 ```
 ```_stop_repl``` is a reserved internal command which is used to pause REPL of the current terminal.<br/>
 When terminal became a shadow terminal, its stdin will write to itself other than write to the main terminal, which means the shadow terminal could only see but not respond to anything.<br/>
+### su
+Switch user. To configure users, see [configure users and permission](#configure-users-and-permission).
+```shell
+void:> su admin:jlywxy
+su: Enter password for admin:jlywxy: 
+void:jlywxy#
+```
 ### exit
 Simply exit the terminal.
 ```shell
@@ -233,7 +280,8 @@ see in voruntime/internal.go
     3. voidshell running in WSL have not been tested.
     
 ## update log
-1.12.01 (20A14bd) *Newest Alpha-dev
+1.12.01 (20A191d) *Newest Alpha-dev
+* added internal command `su` to switch user.[su](#su)
 * plugin now base on cgo python3, which is experimental.
 * a new build tool is used. (./build.sh)
 

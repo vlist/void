@@ -20,11 +20,12 @@ type TerminalContext struct {
 	StdoutWriter io.WriteCloser
 	StdinWriterSwitch *vokernel.VolatileWriter
 	internalWriterDestination io.Writer
-	Privileged bool
+	Secured bool
 	Delim byte
 	ShellName string
 	TerminalID string
 	runningREPL bool
+	User *UserContext
 }
 func (t *TerminalContext) RedirectStdinWriter(w io.Writer){
 	t.internalWriterDestination=t.StdinWriterSwitch.Destination
@@ -95,9 +96,10 @@ func clientHello(tctx *TerminalContext){
 }
 
 func Prompt(tctx *TerminalContext)string{
-	if tctx.Privileged{
-		return vokernel.Format("<vft green bold>void</vft>:<vft yellow bold>#></vft>")
+	if tctx.User.Group=="guest"{
+		return vokernel.Format("<vft green bold>void</vft>:<vft blue bold>></vft> ")
 	}else{
-		return vokernel.Format("<vft green bold>void</vft>:<vft blue bold>></vft>")
+		return vokernel.Format("<vft green bold>void</vft>:<vft yellow bold>"+tctx.User.Name+"#</vft> ")
 	}
+
 }

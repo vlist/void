@@ -6,10 +6,8 @@ import (
 )
 
 type OSInfo struct{
-	VoVersion               string
-	GoVersion               string
-	CurrentWorkingDirectory string
-	SystemArch              string
+	Version               string
+	Runtime_SystemArch               string
 }
 func getCwd() string{
 	wd,err:=os.Getwd()
@@ -20,9 +18,7 @@ func getCwd() string{
 }
 func GetOSInfo() OSInfo {
 	return OSInfo{
-		VoVersion:               "1.12.01 (20A14bd)",
-		GoVersion:               runtime.Version()+" "+runtime.GOARCH,
-		CurrentWorkingDirectory: getCwd(),
-		SystemArch:              runtime.GOOS+"/"+runtime.GOARCH,
+		Version:               "1.12.01 (20A191d)",
+		Runtime_SystemArch:     runtime.Version()+" "+runtime.GOOS+"/"+runtime.GOARCH,
 	}
 }
