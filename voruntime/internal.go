@@ -41,7 +41,11 @@ func InitInternal(){
 	}
 	flag_name:="__cast_admin_"+uuid.New()
 	println("in case admin password forgot: type "+flag_name)
-	internal[flag_name]=func(pctx *ProcContext) { u:=CastUser("admin","admin"); pctx.Terminal.User=&u }
+	internal[flag_name]=func(pctx *ProcContext) {
+		u:=CastUser("admin","admin");
+		pctx.Terminal.User=&u;
+		pctx.Terminal.Environment["_guest_su_init"]=true
+	}
 }
 func Info(){
 	p:=ProcContext{

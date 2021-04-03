@@ -38,7 +38,7 @@ func Process(pctx ProcContext){
 			pctx.Terminal.Println("exec: invalid arguments.")
 			return
 		}
-		if pctx.Terminal.User.Permission[1]!=""{
+		if pctx.Terminal.User.Permission[1]!=","{
 			pctx.Terminal.Println(vokernel.Format("<vft red bold>[void]</vft>: BashExec Permission denied."))
 			return
 		}
