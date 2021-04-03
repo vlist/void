@@ -14,7 +14,7 @@ import (
 
 
 func InitSocket(){
-	pa := RC["socket"]
+	pa := vokernel.RC["socket"]
 	println("listening: "+ pa)
 	os.RemoveAll(pa)
 	dir:=filepath.Dir(pa)
@@ -23,9 +23,9 @@ func InitSocket(){
 		println("checking directory failed: "+dir)
 		return
 	}
-	Startserver("unix",pa)
+	Startserver("unix",pa,true)
 }
-func Startserver(network string,path string) (*net.Listener,error){
+func Startserver(network string,path string,admin bool) (*net.Listener,error){
 	l,e:=net.Listen(network,path)
 	if e!=nil{
 		return nil,e
@@ -44,9 +44,9 @@ func Startserver(network string,path string) (*net.Listener,error){
 					break
 				}
 				if network=="unix"{
-					go serve(co,network+":"+path,true)
+					go serve(co,network+":"+path,true,admin)
 				}else{
-					go serve(co,network+":"+path,false)
+					go serve(co,network+":"+path,false,false)
 				}
 
 			}
@@ -55,7 +55,7 @@ func Startserver(network string,path string) (*net.Listener,error){
 	}
 }
 func Startserver_TLS(network string,path string) (*net.Listener,error){
-	cert,e:=tls.LoadX509KeyPair(RC["tls_config_pem"],RC["tls_config_key"])//"cert/server.pem","cert/server.key")
+	cert,e:=tls.LoadX509KeyPair(vokernel.RC["tls_config_pem"], vokernel.RC["tls_config_key"]) //"cert/server.pem","cert/server.key")
 	cfg:=&tls.Config{Certificates: []tls.Certificate{cert}}
 	l,e:=tls.Listen(network,path,cfg)
 	if e!=nil{
@@ -76,14 +76,14 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 					log.Print(e)
 					//break
 				}
-				go serve(co,"tls:"+path,true)
+				go serve(co,"tls:"+path,true,false)
 			}
 			println("tls accept stopped")
 		}()
 		return &l, e
 	}
 }
-func serve(co net.Conn,servername string,secured bool){
+func serve(co net.Conn,servername string,secured bool,admin bool){
 	stdinReader, socketStdinWriter:=io.Pipe()
 	termid:=uuid.New()
 	var stdinWriterVolatile=vokernel.VolatileWriter{Destination: socketStdinWriter}
@@ -92,7 +92,12 @@ func serve(co net.Conn,servername string,secured bool){
 		println("disconnected")
 		delete(termmap,termid)
 	}()
-	uctx,_:= Login("guest","guest","")
+	env:=make(map[string]interface{})
+	uctx:= CastUser("guest","guest")
+	if admin{
+		uctx= CastUser("admin","admin")
+	}
+
 	tctx:= TerminalContext{
 		RawConnection:					co,
 		StdinWriterSwitch:              &stdinWriterVolatile,
@@ -103,7 +108,10 @@ func serve(co net.Conn,servername string,secured bool){
 		ShellName:                      servername,
 		TerminalID: 					termid,
 		User: &uctx,
+		Environment: env,
 	}
+	env["_guest_su_auth_failed_count"]=0
+	env["_guest_su_init"]=admin
 	termmap[termid]=&tctx
 	clientHello(&tctx)
 	go tctx.StartREPL()

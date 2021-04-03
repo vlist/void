@@ -16,8 +16,6 @@ if you want to use build.sh
 //END _VOID_RUNTIME_PLUGIN_GO_CGO_AUTOFILL_
 #cgo CFLAGS: -I. -I${SRCDIR}/..// -I"/Library/Java/JavaVirtualMachines/jdk1.8.0_231.jdk/Contents/Home/include" -I"/Library/Java/JavaVirtualMachines/jdk1.8.0_231.jdk/Contents/Home/include/darwin"
 #include "plugin_def.h"
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
 
 PyObject* func_voidctx_info(PyObject *self, PyObject *args) {
 	voidctx_info();
@@ -64,8 +62,10 @@ import (
 )
 
 var voidplugin_process *C.PyObject
+var plugin_func_inited bool
 
 func InitPlugin() {
+	plugin_func_inited=false
 	C.voidctxInit()
 	C.Py_Initialize()
 	initcode:=C.CString("import sys;sys.path.append(\"./plugins\")")
@@ -86,19 +86,27 @@ func InitPlugin() {
 		println("could not access plugin process function")
 		return
 	}
+	plugin_func_inited=true
 }
 
 func Plugin_Process(pctx ProcContext){
-	args:=C.PyTuple_New(2)
+	if !plugin_func_inited{
+		pctx.Terminal.Println("voidshell plugin loader mod could not be initialized. Check syntax error in plugin_loader.py")
+		return
+	}
+	args:=C.PyTuple_New(3)
 	arg0_raw:=C.CString(pctx.CommandName+" "+strings.Join(pctx.Args," "))
 	arg1_raw:=C.CString(pctx.Terminal.TerminalID)
+	arg2_raw:=C.CString(vokernel.RC["plugin_root"])
 	arg0:=C.PyUnicode_FromString(arg0_raw)
 	arg1:=C.PyUnicode_FromString(arg1_raw)
+	arg2:=C.PyUnicode_FromString(arg2_raw)
 	C.free(unsafe.Pointer(arg0_raw))
 	C.free(unsafe.Pointer(arg1_raw))
-	C.PyTuple_SetItem(args,0,arg0);C.PyTuple_SetItem(args,1,arg1)
+	C.free(unsafe.Pointer(arg2_raw))
+	C.PyTuple_SetItem(args,0,arg0);C.PyTuple_SetItem(args,1,arg1);C.PyTuple_SetItem(args,2,arg2)
 	if ret:=C.PyObject_CallObject(voidplugin_process,args);ret==nil{
-		pctx.Terminal.Output(vokernel.Format("<vft red bold>[void]</vft>: Could not execute plugin."))
+		pctx.Terminal.Println(vokernel.Format("<vft red bold>[void]</vft>: Could not execute plugin."))
 		return
 	}
 }

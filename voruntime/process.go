@@ -27,7 +27,7 @@ func Process(pctx ProcContext){
 	if strings.TrimSpace(pctx.CommandName)==""{
 		return
 	}
-	println("process: "+pctx.CommandName+" "+pctx.Type+" from "+pctx.Terminal.TerminalID)
+	println("process: "+pctx.Type+":"+pctx.CommandName+" "+pctx.Terminal.TerminalID+" "+pctx.Terminal.User.Group+":"+pctx.Terminal.User.Name)
 	if pctx.CommandName==""{
 		return
 	}
@@ -35,11 +35,11 @@ func Process(pctx ProcContext){
 	switch pctx.Type {
 	case "exec":{
 		if len(pctx.Args)==0{
-			pctx.Terminal.Output("exec: invalid arguments\n")
+			pctx.Terminal.Println("exec: invalid arguments.")
 			return
 		}
 		if pctx.Terminal.User.Permission[1]!=""{
-			pctx.Terminal.Output(vokernel.Format("<vft red bold>[void]</vft>: BashExec Permission denied.\n"))
+			pctx.Terminal.Println(vokernel.Format("<vft red bold>[void]</vft>: BashExec Permission denied."))
 			return
 		}
 		BashExec(strings.Join(pctx.Args," "),pctx.Terminal)
@@ -47,19 +47,19 @@ func Process(pctx ProcContext){
 	case "internal":{
 		p,e:=PermissionFilter(pctx.CommandName,pctx.Terminal.User.Permission[0])
 		if !p{
-			pctx.Terminal.Output(vokernel.Format("<vft red bold>[void]</vft>: Permission denied.\n"+e+"\n"))
+			pctx.Terminal.Println(vokernel.Format("<vft red bold>[void]</vft>: Permission denied.\n"+e))
 			return
 		}
 		f := internal[pctx.CommandName]
 		if f != nil {
 			f(&pctx)
 		} else {
-			pctx.Terminal.Output("command not found\n")
+			pctx.Terminal.Println("command not found.")
 		}}
 	case "plugin":{
 		p,e:=PermissionFilter(pctx.CommandName,pctx.Terminal.User.Permission[2])
 		if !p{
-			pctx.Terminal.Output(vokernel.Format("<vft red bold>[void]</vft>: Permission denied.\n"+e+"\n"))
+			pctx.Terminal.Println(vokernel.Format("<vft red bold>[void]</vft>: Permission denied.\n"+e))
 			return
 		}
 		//args:=append([]string{"./plugins/plugin_init.js", RC["plugin_root"], pctx.CommandName},pctx.Args...)

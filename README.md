@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.12.01 (20A14bd). [See update log](#update-log).<br/>
+Current version: 1.12.01 (20A193d). [See update log](#update-log).<br/>
 Author / Contributors: <a href="https://github.com/jlywxy">jlywxy</a>, <a href="https://github.com/vlist">vlist</a>.
 <br/><br/>
 This program now don't support Windows. [see reason](#windows-no)<br/>
@@ -92,6 +92,9 @@ Permission Layer: internal(I),exec(E),plugin(P)<br/>
 Note: Exec Permission should be `""`(all granted) or `"-"`(all denied) ONLY, <br/>
 because `exec` parameters are directly passed to /bin/bash, void interpreter cannot analyse what processes are being spawned. (user may use `;`,`&`,`&&`,`|`,`screen`,etc to spawn multiple process in single line; user also could spawn another shell to avoid the permission filtering.).<br/>
 <br/>
+Permissions set for single user is a implement of group permission.However, leaving `""` in single user permission setting won't overwrite group permission to "all granted".<br/>
+Password_Encrypted is sha256 hashed.<br/>
+DO NOT use "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" as password_encrypted because it means empty string: sha256("")<br/>
 Example:<br/>
 ```json
 {
@@ -99,23 +102,30 @@ Example:<br/>
   {
     "admin": {
       "admin": {
-        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-      },
-      "jlywxy": {
-        "password_encrypted": "12feff54ceeed7f513a14141007c42acf88ca138b662e320548a389de796ae41"
+        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "permission": {"internal":"","exec":"","plugins":""}
       }
     },
     "guest": {
       "guest": {
-        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "password_encrypted": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "permission": {"internal":"-who","exec":"","plugins":""}
       }
     }
   },
   "group_permission":
   {
     "admin": {"internal":"","exec":"","plugins":""},
-    "guest": {"internal":"-,info,su,exit","exec":"-","plugins":"-"}
+    "guest": {"internal":"-,info,su,who,clear,exit,_stop_repl","exec":"-","plugins":"-"}
   }
+}
+```
+Note: _stop_repl should be added to internal permissions, which is a dependency of internal command `shadow`.<br/>
+Users connected to default socket shell will login to admin:admin automatically.<br/>
+When terminal transmission is not secured (raw tcp), [su](#su) is disabled to prevent password leakage. To allow `su` in insecured transmission, modify configuration in `vsrc.json`:
+```json
+{
+  "allow_su_via_insecure_transmission": "true"
 }
 ```
 ## plugin development
@@ -126,9 +136,9 @@ Create a python file located in plugin/root directory.<br/>
 Plugin template is shown below:
 ```
 #DO NOT modify "init"
-def init(sctx):
+def init(pctx):
     global ctx
-    ctx=sctx
+    ctx=pctx
 
 def main(args):
     ctx.print("Hello void.\n")
@@ -153,7 +163,7 @@ Hello void.
   
 ## builtin commands
 ### info
-Displays os info and shell/terminal info.
+Display os info,terminal info,user info.
 ```shell
 void:admin# info
 
@@ -162,10 +172,10 @@ void:admin# info
     | | / // __ \ / // __  / (_)\ \         
     | |/ // /_/ // // /_/ / _   / / ______    
     |___/ \____//_/ \____/ (_) /_/ /_____/  
-     void:>void --everything
+     void:> void --everything
 
-voidshell 1.12.01 (20A191d)
-   Runtime/System Arch: go1.16.2 darwin/amd64
+voidshell 1.12.01 (20A193d)
+└─ Runtime/System Arch: go1.16.2 darwin/amd64
 Process Context(pctx):
 ├─ Command Name: info
 ├─ Arguments: []
@@ -178,11 +188,24 @@ Process Context(pctx):
       └─ Permissions: I(),E(),P(): all granted
 
 ```
+Arguments could also be applied to control `info` output.
+```shell
+void:admin# info --nologo --noctx
+voidshell 1.12.01 (20A193d)
+└─ Runtime/System Arch: go1.16.2 darwin/amd64
+```
 ### exec
 Run bash commands in voidshell.
 ```shell
 void:> exec ls
-README.md main.go   plugins    void.png  voidsh    vokernel  voruntime voshell
+README.md           plugin_def.h
+__pycache__         plugins
+build.sh            users.json
+cert                void
+cgo-cpython-tool.sh void.png
+go.mod              vokernel
+go.sum              voruntime
+main.go             vsrc.json
 ```
 ### shutil
 Command version 1.2.<br/>
@@ -203,33 +226,34 @@ To configure TLS certificate, see [TLS Certificate Configuration](#server-tls-ce
 Examples:<br/>
 Opening new socket servers:
 ```shell
+void:> shutil --open unix:/tmp/vssock2
 void:> shutil --open tls:127.0.0.1:9001
-void:> shutil --open tcp:127.0.0.1:9001
-void:> shutil --open unix:/tmp/vssock1
+void:> shutil -o tcp:127.0.0.1:9001
 ```
 Close a socket server:
 ```shell
-void:> shutil --kill unix:/tmp/vssock1
+void:> shutil --kill unix:/tmp/vssock2
+void:> shutil -k tls:127.0.0.1:9001
 ````
 List all opened socket server:
 ```shell
 void:> shutil --list
 opening socket shell: 
-unix:./voidsh       default
+unix:/tmp/vssock1       default
 tls:127.0.0.1:9000  tls
 tcp:127.0.0.1:9001
-unix:/tmp/vssock1
+unix:/tmp/vssock2
 ```
 The default socket neither could be reopened nor be killed.
 ### shadow
 Command version 1.1.<br/>
 Project current terminal output to another terminal.The terminal that be projected is called "shadow terminal".<br/>
-"terminal name" is terminal identifier which can be looked up in internal command [info](#info).<br/>
+terminal id can be looked up in [info](#info).<br/>
 ```shell
 void:> shadow
-usage [--commands] [terminal name]
+usage [--commands] [terminal id]
 commands:
-	-p,--project [terminal name]
+	-p,--project [terminal id]
 		project current terminal session to specific terminal
 	-d,--detach
 		detach shadow terminal
@@ -280,11 +304,14 @@ see in voruntime/internal.go
     3. voidshell running in WSL have not been tested.
     
 ## update log
-1.12.01 (20A191d) *Newest Alpha-dev
-* added internal command `su` to switch user.[su](#su)
+1.12.01 (20A193d) *Newest Alpha-dev
+* added internal command `su` to switch user: [su](#su),added internal `who` to get user info.
 * plugin now base on cgo python3, which is experimental.
 * a new build tool is used. (./build.sh)
-
+* input supports history track (use up and down arrow key), history files are located in .voidsh_history/terminalid
+* internal code modification:
+  * added a internal command __cast_admin_uuid in case admin password forgotten.
+  
 1.11.4 (20A146) *Newest Alpha
 * changed command syntax of [shutil](#shutil) and [shadow](#shadow).
 * fixed bugs of command shadow.

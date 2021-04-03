@@ -1,5 +1,7 @@
 {
     "socket": "/tmp/vssock1",
     "tls_config_pem": "cert/server.pem",
-    "tls_config_key": "cert/server.key"
+    "tls_config_key": "cert/server.key",
+    "allow_su_via_insecure_transmission": "true",
+    "plugin_root": "./plugins"
 }

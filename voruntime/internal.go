@@ -1,7 +1,9 @@
 package voruntime
 
 import (
+	"github.com/go-basic/uuid"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"void/vokernel"
@@ -14,69 +16,62 @@ type ListenerContext struct{
 var internal map[string]func(*ProcContext)
 func InitInternal(){
 	internal=map[string]func(*ProcContext){
+		"void": func(pctx *ProcContext) { },
 		"shadow": internal_shadow,
 		"info": internal_info,
 		"exit": func(pctx *ProcContext) {
 			terminal_dispose(pctx.Terminal)
 		},
+		"clear": func(pctx *ProcContext) {
+			h,_:=Getsize(*pctx.Terminal)
+			for i:=0;i<h-1;i++{
+				pctx.Terminal.Output("\n")
+			}
+		},
 		"shutil": internal_shutil,
 		"_stop_repl":func(pctx *ProcContext) {
 			pctx.Terminal.StopREPL()
 		},
-		"su": func(pctx *ProcContext) {
-			if !pctx.Terminal.Secured{
-				pctx.Terminal.Output("su: Terminal transmission not secured.Reject to authenticate.\n")
-				return
-			}
-			if len(pctx.Args)==0{
-				du,e:=Login("guest","guest","")
-				if e!=nil{
-					pctx.Terminal.Output("su: Login failed: "+e.Error()+"\n")
-					return
-				}
-				pctx.Terminal.User=&du
-				return
-			}
-			user:=strings.Split(pctx.Args[0],":")
-			if len(user)==0{
-				pctx.Terminal.Output("\nsu: Invalid argument.\n")
-				return
-			}
-			group:=user[0]
-			name:=user[1]
-			pw,e:=pctx.Terminal.InputPassword("su: Enter password for "+pctx.Args[0]+": ")
-			if e!=nil{
-				pctx.Terminal.Output("\nsu: Could not login to "+name+".\n")
-				return
-			}
-			lu,e:=Login(name,group,string(pw))
-			if e!=nil{
-				pctx.Terminal.Output("\nsu: Login failed: "+e.Error()+"\n")
-				return
-			}
-			pctx.Terminal.User=&lu
+		"su": internal_su,
+		"who": func(pctx *ProcContext) {
+			u:=pctx.Terminal.User
+			pctx.Terminal.Println("user: "+u.Group+":"+u.Name)
+			pctx.Terminal.Println("permission: "+PermissionVisualize(u))
 		},
 	}
+	flag_name:="__cast_admin_"+uuid.New()
+	println("in case admin password forgot: type "+flag_name)
+	internal[flag_name]=func(pctx *ProcContext) { u:=CastUser("admin","admin"); pctx.Terminal.User=&u }
+}
+func Info(){
+	p:=ProcContext{
+		Args:        []string{"--noctx"},  //DO NOT remove this unless fill required fields in contexts below.
+		OS: vokernel.GetOSInfo(),
+		Terminal:    &TerminalContext{
+			StdoutWriter: os.Stdout,
+		},
+	}
+	internal_info(&p)
 }
 func internal_info(pctx *ProcContext){
 	var printLogo bool=true
-	var printExecContext bool=true
+	var printContext bool=true
 	for _,v:=range pctx.Args{
 		if v=="--nologo" {
 			printLogo=false
 		}
-		if v=="--noexeccontext" {
-			printExecContext=false
+		if v=="--noctx" {
+			printContext=false
 		}
 	}
 	if printLogo{
-		logo:=`
-<vft green>                    _      __ </vft> <vft blue>__           </vft>
+		logo:=
+`<vft green>                    _      __ </vft> <vft blue>__           </vft>
 <vft green>     _   __ ____   (_) ___/ /</vft> _<vft blue>\ \          </vft>
 <vft green>    | | / // __ \ / // __  /</vft> (_)<vft blue>\ \         </vft>
 <vft green>    | |/ // /_/ // // /_/ /</vft> _   <vft blue>/ / ______  </vft>  
 <vft green>    |___/ \____//_/ \____/</vft> (_) <vft blue>/_/ /_____/  </vft>
-     <vft green bold>void</vft>:<vft blue bold>></vft>void --everything
+     <vft green bold>void</vft>:<vft blue bold>> </vft>void --everything
 
 `
 		pctx.Terminal.Output(vokernel.Format(logo))
@@ -84,9 +79,9 @@ func internal_info(pctx *ProcContext){
 	info:= vokernel.GetOSInfo()
 	var formattedInfo=""
 	formattedInfo+="<vft bold>voidshell</vft> "+info.Version+"\n"
-	formattedInfo+="   Runtime/System Arch: "+info.Runtime_SystemArch+"\n"
+	formattedInfo+="└─ Runtime/System Arch: "+info.Runtime_SystemArch+"\n"
 	pctx.Terminal.Output(vokernel.Format(formattedInfo))
-	if printExecContext {
+	if printContext {
 		var formattedExecContext string = ""
 		formattedExecContext += "<vft bold>Process Context(pctx):</vft>\n"
 		formattedExecContext += "├─ Command Name: " + pctx.CommandName + "\n"
@@ -102,7 +97,3 @@ func internal_info(pctx *ProcContext){
 	}
 }
 
-func terminal_dispose(tctx *TerminalContext){
-	disconnectshadow(tctx)
-	tctx.Disconnect()
-}

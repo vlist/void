@@ -1,6 +1,7 @@
 package voruntime
 
 import (
+	"encoding/hex"
 	"github.com/chzyer/readline"
 	"io"
 	"strings"
@@ -15,7 +16,7 @@ type Terminal interface {
 var termmap=make(map[string]*TerminalContext)
 
 type TerminalContext struct {
-	RawConnection io.ReadWriteCloser
+	RawConnection io.Closer
 	StdinReader io.ReadCloser
 	StdoutWriter io.WriteCloser
 	StdinWriterSwitch *vokernel.VolatileWriter
@@ -26,6 +27,7 @@ type TerminalContext struct {
 	TerminalID string
 	runningREPL bool
 	User *UserContext
+	Environment map[string]interface{}
 }
 func (t *TerminalContext) RedirectStdinWriter(w io.Writer){
 	t.internalWriterDestination=t.StdinWriterSwitch.Destination
@@ -34,11 +36,25 @@ func (t *TerminalContext) RedirectStdinWriter(w io.Writer){
 func (t *TerminalContext) RestoreStdinWriter(){
 	t.StdinWriterSwitch.Destination=t.internalWriterDestination
 }
+type KeyListener struct{
+	Terminal *TerminalContext
+}
+func (l * KeyListener) OnChange(line []rune, pos int, key rune) (newLine []rune, newPos int, ok bool){
+	print(hex.EncodeToString([]byte(string(key))))
+	return line,pos,true
+}
 func (t*TerminalContext) Input(prompt string)(string, error){
 	readline.Stdin=t.StdinReader
 	readline.Stdout=t.StdoutWriter
-	r,_:=readline.New(prompt)
+	//var l readline.Listener= &KeyListener{t}
+	r,_:=readline.NewEx(&readline.Config{
+		Prompt:                 prompt,
+		HistoryFile:            ".voidsh_history/"+t.TerminalID,
+		HistoryLimit:           500,
+		//Listener:               l,
+	})
 	t.Output("\r")
+	
 	return r.Readline()
 }
 func (t*TerminalContext) InputPassword(prompt string)([]byte, error){
@@ -50,6 +66,9 @@ func (t*TerminalContext) InputPassword(prompt string)([]byte, error){
 }
 func (t*TerminalContext) Output(content string){
 	t.StdoutWriter.Write([]byte(strings.ReplaceAll(content,"\n","\r\n")))
+}
+func (t*TerminalContext) Println(content string){
+	t.Output(content+"\n")
 }
 func (t*TerminalContext) Disconnect(){
 	t.RawConnection.Close()
@@ -101,5 +120,9 @@ func Prompt(tctx *TerminalContext)string{
 	}else{
 		return vokernel.Format("<vft green bold>void</vft>:<vft yellow bold>"+tctx.User.Name+"#</vft> ")
 	}
-
+}
+func terminal_dispose(tctx *TerminalContext){
+	//os.RemoveAll(".voidsh_history/"+tctx.TerminalID)
+	disconnectshadow(tctx)
+	tctx.Disconnect()
 }

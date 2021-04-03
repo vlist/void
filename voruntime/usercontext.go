@@ -15,22 +15,23 @@ var Users UserRC
 type UserContext struct{
 	Name string
 	Group string
-	Permission []string   //internal,exec,plugins
+	Permission []string   //I,E,P
 }
-type PermissoinToken struct{
+type PermissionToken struct{
 	Internal string `json:"internal""`
 	Exec string `json:"exec""`
 	Plugin string `json:"plugins"`
 }
 type User struct{
 	PasswordEncrypted string `json:"password_encrypted"`
+	Permission PermissionToken `json:"permission"`
 }
 type UserRC struct{
 	Groups map[string]map[string]User      `json:"user_groups"`
-	Permissions map[string]PermissoinToken `json:"group_permission"`
+	Permissions map[string]PermissionToken `json:"group_permission"`
 }
 
-func InitUser(){
+func InitUserRC(){
 	file,err:=os.Open("users.json")
 	if err!=nil{
 		log.Fatal(err)
@@ -56,17 +57,27 @@ func Login(name string,group string,password string)(UserContext,error){
 		return UserContext{},errors.New("group not found")
 	}
 	if p==p_has{
-		return UserContext{
-			Name:       name,
-			Group:      group,
-			Permission: []string{Users.Permissions[group].Internal,Users.Permissions[group].Exec,Users.Permissions[group].Plugin},
-		},nil
+		return CastUser(name,group),nil
 	}else{
 		return UserContext{},errors.New("password incorrect")
 	}
 }
-
+func CastUser(name string,group string)UserContext{
+	permPrimary:=Users.Permissions[group]
+	permSecondary:=Users.Groups[group][name].Permission
+	permInternal:=permPrimary.Internal+","+permSecondary.Internal
+	permExec:=permPrimary.Exec+","+permSecondary.Exec
+	permPlugin:=permPrimary.Plugin+","+permSecondary.Plugin
+	return UserContext{
+		Name:       name,
+		Group:      group,
+		Permission: []string{permInternal,permExec,permPlugin},
+	}
+}
 func PermissionFilter(commandname string,permission string) (bool,string){
+	if commandname[0]=='_'{
+		return true, "internal"
+	}
 	if permission == ""{
 		return true,"All commands access are granted of this user group."
 	}
@@ -74,6 +85,7 @@ func PermissionFilter(commandname string,permission string) (bool,string){
 	tmpPerm:=true
 	tmpReason:="Permission restrictions of command '"+commandname+"' not found."
 	for _,v:=range permissionToken{
+		if v=="" {continue}
 		if v=="-"{
 			tmpPerm=false
 			tmpReason="Permission denied for command '"+commandname+"' of this user group."
@@ -97,7 +109,7 @@ func PermissionVisualize(uctx *UserContext) string{
 	e:=uctx.Permission[1]
 	p:=uctx.Permission[2]
 	com:=""
-	if i==""&&e==""&&p==""{
+	if i==","&&e==","&&p==","{
 		com=": all granted"
 	}
 	return "I("+i+"),E("+e+"),P("+p+")"+com

@@ -39,10 +39,10 @@ else
     export VO_BUILD_CGO="#cgo pkg-config: python3-embed"
 fi
 echo ------------------------------
-echo "(if needed) Set ⬇️ in .bash_profile or Goland Run/Debug Configuration -> Environment:"
+echo "(if needed) Set ⬇️ in Goland Run/Debug Configuration -> Environment or in ~/.bash_profile: "
 echo PKG_CONFIG_PATH=$PCP_RAW
 echo
-echo "Put ⬇️ in plugin.go file:"
+echo "Put ⬇️ in plugin.go and plugin_ctx.go:"
 echo $VO_BUILD_CGO
 echo ------------------------------
 

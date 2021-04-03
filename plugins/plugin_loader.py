@@ -1,11 +1,12 @@
 import os,sys
 import void
-from importlib import reload
 void.info()
 
 class PluginCtx:
-    def __init__(self,sctxid):
+    def __init__(self,sctxid,root,self_root):
         self.sctxid=sctxid
+        self.root=root+"/root/"
+        self.self_root=self_root
     def print(self,content):
         void.print(str(content),self.sctxid)
     def printf(self,content):
@@ -13,16 +14,21 @@ class PluginCtx:
     def input(self,prompt):
         return void.input(prompt,self.sctxid)
 
-def plugin_process(command,sctxid):
+def plugin_process(command,sctxid,pluginroot):
     arg_segs=command.split(" ")
     command_name=arg_segs[0]
     command_args=arg_segs[1:]
-    cmdpath=("./plugins/root/"+command_name+".py").replace("//","/")
-    ctx=PluginCtx(sctxid)
-    if os.path.exists(cmdpath):
+    cmdpath=(pluginroot+"/root/"+command_name+".py").replace("//","/")
+    cmdpath_index=(pluginroot+"/root/"+command_name+"/__init__.py").replace("//","/")
+    ctx=PluginCtx(sctxid,pluginroot,"")
+    type="file"
+    if os.path.exists(cmdpath) or os.path.exists(cmdpath_index):
+        if os.path.exists(cmdpath_index): type="dir"
         cname_segs=command_name.split("/")
-        cname_prefix="./plugins/root/"+"/".join(cname_segs[0:len(cname_segs)-1])
+        cname_prefix=pluginroot+"/root/"+"/".join(cname_segs[0:len(cname_segs)-1])
         cname=cname_segs[len(cname_segs)-1]
+        ctx.self_root=cname_prefix
+        if type=="dir":ctx.self_root=cname_prefix+cname
         try:
             if cname_prefix not in sys.path: sys.path.append(cname_prefix)
             mod=__import__(cname)

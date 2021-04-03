@@ -1,17 +1,21 @@
 package voruntime
 
 /*
+//BEGIN _VOID_RUNTIME_PLUGIN_CTX_GO_CGO_AUTOFILL_
+#cgo pkg-config: python3-embed
+//END _VOID_RUNTIME_PLUGIN_CTX_GO_CGO_AUTOFILL_
 #cgo CFLAGS: -I. -I${SRCDIR}/..
 #include "plugin_def.h"
 extern void voidctx_info();
 extern void voidctx_print(char*, char*);
+typedef PyObject* pyfunc(PyObject*, PyObject*);
 */
 import "C"
 import "void/vokernel"
 
 //export voidctx_info
 func voidctx_info(){
-	println("void plugin context v0.1")
+	println("* loaded voidshell plugin context. version 1.0")
 }
 //export voidctx_print_raw
 func voidctx_print_raw(content *C.char, sctxid *C.char){

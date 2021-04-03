@@ -1,5 +1,3 @@
-#JetBrains Project File
-
 # Binaries, plugins, libs
 *.dll
 *.dylib
@@ -11,4 +9,8 @@
 *.test
 *.tmp
 
+# CPython Compiled (*.pyc)
 __pycache__
+
+# voidsh readline history. Note: the directory without files should be remained.
+.voidsh_history/*

@@ -6,12 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"void/vokernel"
 )
 
 var shmap=make(map[string]ListenerContext)
 
 func internal_shutil(pctx *ProcContext) {
-	rcsockid := "unix:" + RC["socket"]
+	rcsockid := "unix:" + vokernel.RC["socket"]
 	if len(pctx.Args) == 0 {
 		shutil_invalid_argument(pctx.Terminal)
 		return
@@ -26,7 +27,7 @@ func internal_shutil(pctx *ProcContext) {
 			}
 			sockid := pctx.Args[1]
 			if sockid == rcsockid {
-				pctx.Terminal.Output("could not operate on default socket\n")
+				pctx.Terminal.Println("could not operate on default socket.")
 				return
 			}
 			na := strings.Split(sockid, ":")
@@ -45,11 +46,11 @@ func internal_shutil(pctx *ProcContext) {
 						println("checking directory failed: " + dir)
 						e = err
 					}
-					l, e = Startserver("unix", address)
+					l, e = Startserver("unix", address,false)
 				}
 			case "tcp":
 				{
-					l, e = Startserver("tcp", address)
+					l, e = Startserver("tcp", address,false)
 				}
 			case "tls":
 				{
@@ -59,11 +60,11 @@ func internal_shutil(pctx *ProcContext) {
 				}
 			default:
 				{
-					pctx.Terminal.Output("network " + network + " not supported\n")
+					pctx.Terminal.Println("network " + network + " not supported.")
 				}
 			}
 			if e != nil {
-				pctx.Terminal.Output("opening shell on socket " + sockid + " failed\n")
+				pctx.Terminal.Println("opening shell on socket " + sockid + " failed.")
 				log.Print(e)
 				return
 			}
@@ -80,27 +81,27 @@ func internal_shutil(pctx *ProcContext) {
 			}
 			sockid := pctx.Args[1]
 			if sockid == rcsockid {
-				pctx.Terminal.Output("could not operate on default socket\n")
+				pctx.Terminal.Println("could not operate on default socket.")
 				return
 			}
 			if l, ok := shmap[sockid]; ok {
 				e := (*l.Listener).Close()
 				if e != nil {
-					pctx.Terminal.Output("closing shell on socket " + sockid + " failed\n")
+					pctx.Terminal.Println("closing shell on socket " + sockid + " failed.")
 					log.Print(e)
 					return
 				}
 				delete(shmap, sockid)
 			} else {
-				pctx.Terminal.Output("closing shell on socket " + sockid + " failed: listener not found\n")
+				pctx.Terminal.Println("closing shell on socket " + sockid + " failed: listener not found.")
 			}
 		}
 	case "-l","--list":
 		{
-			pctx.Terminal.Output("opening socket shell: \n")
-			pctx.Terminal.Output(rcsockid + "\tdefault\n")
+			pctx.Terminal.Println("opening socket shell: ")
+			pctx.Terminal.Println(rcsockid + "\tdefault")
 			for k, v := range shmap {
-				pctx.Terminal.Output(k + "\t" + v.Flags + "\n")
+				pctx.Terminal.Println(k + "\t" + v.Flags)
 			}
 		}
 	default:
@@ -112,7 +113,7 @@ func internal_shutil(pctx *ProcContext) {
 }
 
 func shutil_invalid_argument(tctx *TerminalContext){
-	tctx.Output("invalid arguments\n")
+	tctx.Println("invalid arguments.")
 	usage := `usage [--options network:address]
 options:
 	-o,--open [tls|tcp|unix:address:port]: 
@@ -121,5 +122,5 @@ options:
 		close specific socket server
 	-l,--list: list all shell socket server
 `
-	tctx.Output(usage)
+	tctx.Println(usage)
 }

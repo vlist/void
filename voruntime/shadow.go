@@ -27,8 +27,8 @@ func internal_shadow(pctx *ProcContext) {
 
 		for _,v:=range termmap{
 			if v.TerminalID==termname{
-				v.Output("shadow connecting to: "+pctx.Terminal.TerminalID+"\n")
-				v.Output("--------SHADOW BEGINS--------\n\n")
+				v.Println("shadow connecting to: "+pctx.Terminal.TerminalID)
+				v.Println("--------SHADOW BEGINS--------\n")
 				v.StdinWriterSwitch.Destination.Write([]byte("_stop_repl\r\n"))
 				//go io.Copy(pctx.Terminal.StdinWriterSwitch.Destination,v.StdinReader)
 
@@ -42,7 +42,7 @@ func internal_shadow(pctx *ProcContext) {
 				return
 			}
 		}
-		pctx.Terminal.Output("terminal not found")
+		pctx.Terminal.Println("terminal not found.")
 	}
 	case "-d","--detach":{
 		disconnectshadow(pctx.Terminal)
@@ -58,9 +58,9 @@ func disconnectshadow(tctx *TerminalContext){
 		for _,v:=range termmap{
 			if v.TerminalID==state.destTerminalName{
 				tctx.StdoutWriter=state.srcStdoutWriter
-				tctx.Output("close existing shadow projector: "+v.TerminalID+"\n")
-				v.Output("--------SHADOW ENDS--------\n")
-				v.Output("shadow disconnecting from: "+tctx.TerminalID+"\n")
+				tctx.Println("close existing shadow projector: "+v.TerminalID)
+				v.Println("--------SHADOW ENDS--------")
+				v.Println("shadow disconnecting from: "+tctx.TerminalID)
 				go v.StartREPL()
 				go v.StdinWriterSwitch.Destination.Write([]byte("\r\n"))
 				delete(shadowstate,tctx.TerminalID)
@@ -70,13 +70,13 @@ func disconnectshadow(tctx *TerminalContext){
 	}
 }
 func shadow_invalid_argument(tctx *TerminalContext){
-	tctx.Output("invalid arguments\n")
-	usage := `usage [--commands] [terminal name]
+	tctx.Println("invalid arguments.")
+	usage := `usage [--commands] [terminal id]
 commands:
-	-p,--project [terminal name]
+	-p,--project [terminal id]
 		project current terminal session to specific terminal
 	-d,--detach
 		detach shadow terminal
 `
-	tctx.Output(usage)
+	tctx.Println(usage)
 }
