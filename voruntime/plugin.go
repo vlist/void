@@ -94,6 +94,7 @@ func Plugin_Process(pctx ProcContext){
 		pctx.Terminal.Println("voidshell plugin loader mod could not be initialized. Check syntax error in plugin_loader.py")
 		return
 	}
+
 	args:=C.PyTuple_New(3)
 	arg0_raw:=C.CString(pctx.CommandName+" "+strings.Join(pctx.Args," "))
 	arg1_raw:=C.CString(pctx.Terminal.TerminalID)

@@ -14,3 +14,4 @@ __pycache__
 
 # voidsh readline history. Note: the directory without files should be remained.
 .voidsh_history/*
+plugins/root/_*
