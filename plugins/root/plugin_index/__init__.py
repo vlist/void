@@ -1,7 +1,7 @@
 
-def init(sctx):
+def init(tctx):
     global ctx
-    ctx=sctx
+    ctx=tctx
 
 def main(args):
     ctx.print("root: "+ctx.root+", self_root: "+ctx.self_root+"\n")

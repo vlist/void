@@ -5,12 +5,12 @@ import (
 	"void/vokernel"
 )
 
-func PreProcess(command string, sctx *TerminalContext) ProcContext {
+func PreProcess(command string, tctx *TerminalContext) ProcContext {
 	segs:=strings.Split(command, " ")
 	pctx:= ProcContext{
 		CommandName: segs[0],
 		Args: segs[1:],
-		Terminal: sctx,
+		Terminal: tctx,
 	}
 	if pctx.CommandName=="exec"{
 		pctx.Type="exec"

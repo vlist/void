@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.12.01 (20A193d). [See update log](#update-log).<br/>
+Current version: 1.12.1 (20A194). [See update log](#update-log).<br/>
 Author / Contributors: <a href="https://github.com/jlywxy">jlywxy</a>, <a href="https://github.com/vlist">vlist</a>.
 <br/><br/>
 This program now don't support Windows. [see reason](#windows-no)<br/>
@@ -12,7 +12,6 @@ package for Ubuntu: python3-dev<br/>
 for CentOS: python3-devel<br/>
 for Mac OS: (no need to install -dev)
 
-node.js over 15.0.0 should be installed.<br/>
 ## build voidshell
 ```shell
 $ ./build.sh
@@ -128,6 +127,13 @@ When terminal transmission is not secured (raw tcp), [su](#su) is disabled to pr
   "allow_su_via_insecure_transmission": "true"
 }
 ```
+### configure plugin root directory
+```json
+{
+  "plugin_root": "./plugins"
+}
+```
+
 ## plugin development
 Plugins are python3 script file,
 located in plugin/root directory.
@@ -150,16 +156,54 @@ Simply type plugin name and arguments in voidshell.
 void:> plugin
 Hello void.
 ```
+### developing plugin
+`ctx` provides most informations and functions to be used for plugin.
+* `ctx.print(content)`<br/>
+Output `content` to current terminal stdout
+  
+* `ctx.println(content)`<br/>
+Output `content` and Line Feed to current terminal stdout
 
+* `ctx.printf(content)`<br/>
+Output `content` wrapped by VFT tags to current terminal stdout
+  
+* `ctx.input(prompt)`<br/>
+Scan input after output `prompt`
+  
+* `ctx.tctx`<br/>
+Readonly dict representing current terminal context.<br/>
+Type "pinfo" to check terminal context passed to plugin.
+```shell
+void:admin# pinfo
+voidshell Plugin Extension 1.0
+Terminal Context: 
+{'tctxid': '902ba40c-0f09-ff26-4987-1d34c24b2a05', 
+'tctx': {'RawConnection': {}, 'StdinReader': {}, 
+'StdoutWriter': {}, 'StdinWriterSwitch': {'Destination': {}}, 
+'Secured': True, 'Delim': 13, 'ShellName': 'unix:/tmp/vssock1', 
+'TerminalID': '902ba40c-0f09-ff26-4987-1d34c24b2a05', 
+'User': {'Name': 'admin', 'Group': 'admin', 'Permission': 
+[',', ',', ',']}, 'Environment': {'_guest_su_auth_failed_count': 0,
+ '_guest_su_init': True}}, 'root': './plugins/root/',
+  'self_root': './plugins/root/'}
+
+[void]: 'pinfo' exit 0.
+```
+  
+* `ctx.root`,`ctx.self_root`<br/>
+"root" represents plugin root directory (set in vsrc.json config file),<br/>
+"self_root" represents root directory of "this" script.<br/>
+  Note: when plugin form is plugin_name.py, self_root is its parent directory; (plugin name: path/plugin, root=path/, self_root=path/)<br/>
+  When plugin form is plugin_name/\__init\__.py, self_root is the parent directory of \__init\__.py (plugin name: path/plugin, root=path/, self_root=path/plugin)<br/>
+  
 ### void format text(VFT)
-* Converts vft tag to VT100 terminal colors.
+* Converts vft tag to VT100 terminal codes.
 * Only supports forecolor and bold format.
 * Format:`<vft {red|green|yellow|blue} {bold|}>formatting text</vft>`,<br/>
   escape tag is `"<\vft>"` and `"<\/vft>"`
 * Example: `"black<vft red bold>red bold</vft>black<vft blue>blue</vft>black<\vft green bold>shouldn't formatteded<\/vft>"`,<br/>
   output should be:
   black<span style="color: red; font-weight: bold">red bold</span>black<span style="color: blue">blue</span>black&lt;vft green bold&gt;shouldn't formatted&lt;/vft&gt;<br/>
-* Different implements in vft.go and vft.js are equivalent.
   
 ## builtin commands
 ### info
@@ -174,7 +218,7 @@ void:admin# info
     |___/ \____//_/ \____/ (_) /_/ /_____/  
      void:> void --everything
 
-voidshell 1.12.01 (20A193d)
+voidshell 1.12.1 (20A194)
 └─ Runtime/System Arch: go1.16.2 darwin/amd64
 Process Context(pctx):
 ├─ Command Name: info
@@ -191,7 +235,7 @@ Process Context(pctx):
 Arguments could also be applied to control `info` output.
 ```shell
 void:admin# info --nologo --noctx
-voidshell 1.12.01 (20A193d)
+voidshell 1.12.1 (20A194)
 └─ Runtime/System Arch: go1.16.2 darwin/amd64
 ```
 ### exec
@@ -262,7 +306,7 @@ Examples:
 in main terminal:
 ```shell
 void:> shadow --project 3f35f171-eaf6-c9c0-3021-60049d96d4ba
-void:> shadow --detach
+void:> shadow -d
 close existing shadow projector: 3f35f171-eaf6-c9c0-3021-60049d96d4ba
 ```
 in shadow terminal:
@@ -304,6 +348,13 @@ see in voruntime/internal.go
     3. voidshell running in WSL have not been tested.
     
 ## update log
+1.12.1 (20A194) *Newest Alpha
+* fixed issues #7.
+* made plugin experience more stable.
+* changed syntax to configure permission.[configure permission](#configure-users-and-permission)
+* removed all legacy code of node.js plugins.
+* now could login to voidshell directly from stdio, but it will mess with voidshell log output.
+
 1.12.01 (20A193d) *Newest Alpha-dev
 * added internal command `su` to switch user: [su](#su),added internal `who` to get user info.
 * plugin now base on cgo python3, which is experimental.
@@ -312,7 +363,7 @@ see in voruntime/internal.go
 * internal code modification:
   * added a internal command __cast_admin_uuid in case admin password forgotten.
   
-1.11.4 (20A146) *Newest Alpha
+1.11.4 (20A146) 
 * changed command syntax of [shutil](#shutil) and [shadow](#shadow).
 * fixed bugs of command shadow.
 * internal code modification:

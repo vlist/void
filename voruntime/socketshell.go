@@ -1,6 +1,7 @@
 package voruntime
 
 import (
+	"bufio"
 	"crypto/tls"
 	"github.com/go-basic/uuid"
 	"io"
@@ -24,6 +25,15 @@ func InitSocket(){
 		return
 	}
 	Startserver("unix",pa,true)
+
+	go func(){
+		println("press ENTER to connect and log into voidshell via stdio (if needed)...")
+		bufio.NewReader(os.Stdin).ReadString('\n')
+		//s,_:=terminal.GetState(0)
+		//terminal.MakeRaw(0)
+		serve(os.Stdin,os.Stdout,"stdio",true,true)
+		//terminal.Restore(0,s)
+	}()
 }
 func Startserver(network string,path string,admin bool) (*net.Listener,error){
 	l,e:=net.Listen(network,path)
@@ -44,9 +54,9 @@ func Startserver(network string,path string,admin bool) (*net.Listener,error){
 					break
 				}
 				if network=="unix"{
-					go serve(co,network+":"+path,true,admin)
+					go serveSocket(co,network+":"+path,true,admin)
 				}else{
-					go serve(co,network+":"+path,false,false)
+					go serveSocket(co,network+":"+path,false,false)
 				}
 
 			}
@@ -76,19 +86,22 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 					log.Print(e)
 					//break
 				}
-				go serve(co,"tls:"+path,true,false)
+				go serveSocket(co,"tls:"+path,true,false)
 			}
 			println("tls accept stopped")
 		}()
 		return &l, e
 	}
 }
-func serve(co net.Conn,servername string,secured bool,admin bool){
+func serveSocket(co net.Conn,servername string,secured bool,admin bool){
+	serve(co,co,servername,secured,admin)
+}
+func serve(reader io.ReadCloser,writer io.WriteCloser,servername string,secured bool,admin bool){
 	stdinReader, socketStdinWriter:=io.Pipe()
 	termid:=uuid.New()
 	var stdinWriterVolatile=vokernel.VolatileWriter{Destination: socketStdinWriter}
 	go func(){
-		io.Copy(&stdinWriterVolatile,co)  //socket write to stdin writer, shell read from stdin reader
+		io.Copy(&stdinWriterVolatile,reader)  //socket write to stdin writer, shell read from stdin reader
 		println("disconnected")
 		delete(termmap,termid)
 	}()
@@ -99,10 +112,10 @@ func serve(co net.Conn,servername string,secured bool,admin bool){
 	}
 
 	tctx:= TerminalContext{
-		RawConnection:					co,
+		RawConnection:					reader,
 		StdinWriterSwitch:              &stdinWriterVolatile,
 		StdinReader:                    stdinReader,
-		StdoutWriter:                   co,
+		StdoutWriter:                   writer,
 		Delim:                     		'\r',
 		Secured:                		secured,
 		ShellName:                      servername,

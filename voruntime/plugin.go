@@ -37,11 +37,15 @@ PyObject* func_voidctx_printf_raw(PyObject *self, PyObject *args) {
 PyObject* func_voidctx_input_raw(PyObject *self, PyObject *args) {
 	return PyUnicode_FromString(voidctx_input_raw(str(PyTuple_GetItem(args,0)),str(PyTuple_GetItem(args,1))));
 }
+PyObject* func_voidctx_gettctx_json_raw(PyObject *self, PyObject *args) {
+	return PyUnicode_FromString(voidctx_gettctx_json_raw(str(PyTuple_GetItem(args,0))));
+}
 PyMethodDef voidctxMethods[] = {
 	{"info", func_voidctx_info, METH_VARARGS, NULL},
 	{"print", func_voidctx_print_raw, METH_VARARGS, NULL},
 	{"printf", func_voidctx_printf_raw, METH_VARARGS, NULL},
 	{"input", func_voidctx_input_raw, METH_VARARGS, NULL},
+	{"get_tctx_json", func_voidctx_gettctx_json_raw, METH_VARARGS, NULL},
 	{NULL, NULL, 0, NULL}
 };
 PyModuleDef voidctxModule = {
@@ -91,10 +95,9 @@ func InitPlugin() {
 
 func Plugin_Process(pctx ProcContext){
 	if !plugin_func_inited{
-		pctx.Terminal.Println("voidshell plugin loader mod could not be initialized. Check syntax error in plugin_loader.py")
+		pctx.Terminal.Println(vokernel.Format("<vft red bold>[void]</vft>: voidshell plugin loader mod could not be initialized. Check syntax error in plugin_loader.py"))
 		return
 	}
-
 	args:=C.PyTuple_New(3)
 	arg0_raw:=C.CString(pctx.CommandName+" "+strings.Join(pctx.Args," "))
 	arg1_raw:=C.CString(pctx.Terminal.TerminalID)
@@ -107,7 +110,7 @@ func Plugin_Process(pctx ProcContext){
 	C.free(unsafe.Pointer(arg2_raw))
 	C.PyTuple_SetItem(args,0,arg0);C.PyTuple_SetItem(args,1,arg1);C.PyTuple_SetItem(args,2,arg2)
 	if ret:=C.PyObject_CallObject(voidplugin_process,args);ret==nil{
-		pctx.Terminal.Println(vokernel.Format("<vft red bold>[void]</vft>: Could not execute plugin."))
+		pctx.Terminal.Println(vokernel.Format("<vft red bold>[void]</vft>: Plugin_Process failed."))
 		return
 	}
 }
