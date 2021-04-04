@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.12.1 (20A194). [See update log](#update-log).<br/>
+Current version: 1.12.2 (20A194). [See update log](#update-log).<br/>
 Author / Contributors: <a href="https://github.com/jlywxy">jlywxy</a>, <a href="https://github.com/vlist">vlist</a>.
 <br/><br/>
 This program now don't support Windows. [see reason](#windows-no)<br/>
@@ -348,7 +348,11 @@ see in voruntime/internal.go
     3. voidshell running in WSL have not been tested.
     
 ## update log
-1.12.1 (20A194) *Newest Alpha
+1.12.2 (20A194) bugfix *Newest Alpha
+* C symbol `PyRun_SimpleString` not exposed in "python3-dev" in some distro(e.g. CentOS).<br/>
+  deleted `PyRun_SimpleString` from init code.
+  
+1.12.1 (20A194) 
 * fixed issues #7.
 * made plugin experience more stable.
 * changed syntax to configure permission.[configure permission](#configure-users-and-permission)

@@ -72,9 +72,25 @@ func InitPlugin() {
 	plugin_func_inited=false
 	C.voidctxInit()
 	C.Py_Initialize()
-	initcode:=C.CString("import sys;sys.path.append(\"./plugins\")")
-	C.PyRun_SimpleString(initcode)
-	C.free(unsafe.Pointer(initcode))
+	//initcode:=C.CString("import sys;sys.path.append(\"./plugins\")")
+	//C.PyRun_SimpleString(initcode)
+	//C.free(unsafe.Pointer(initcode))
+	sys_name:=C.CString("sys")
+	sys_mod:=C.PyImport_ImportModule(sys_name)
+
+	sys_path_name:=C.CString("path")
+	sys_path:=C.PyObject_GetAttrString(sys_mod,sys_path_name)
+	sys_path_append_name:=C.CString("append")
+	sys_path_append:=C.PyObject_GetAttrString(sys_path,sys_path_append_name)
+	loader_root:=C.CString("./plugins")
+	ar:=C.PyTuple_New(1)
+	C.PyTuple_SetItem(ar,0,C.PyUnicode_FromString(loader_root))
+	C.PyObject_CallObject(sys_path_append,ar)
+
+	C.free(unsafe.Pointer(sys_name))
+	C.free(unsafe.Pointer(sys_path_name))
+	C.free(unsafe.Pointer(sys_path_append_name))
+	C.free(unsafe.Pointer(loader_root))
 
 	path:=C.CString("plugin_loader")
 	loader_mod:=C.PyImport_ImportModule(path)
