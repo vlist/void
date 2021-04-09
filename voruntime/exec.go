@@ -23,5 +23,6 @@ func Exec(tctx *TerminalContext, name string, arg...string){
 	p.Wait()
 	//sctx.RedirectStdinWriter(sctx.InternalWriterDestination)
 	tctx.RestoreStdinWriter()
+	f.Close()
 }
 

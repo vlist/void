@@ -50,19 +50,22 @@ func (t*TerminalContext) Input(prompt string)(string, error){
 	r,_:=readline.NewEx(&readline.Config{
 		Prompt:                 prompt,
 		HistoryFile:            ".voidsh_history/"+t.TerminalID,
-		HistoryLimit:           500,
+		HistoryLimit:           100,
 		//Listener:               l,
 	})
 	t.Output("\r")
-	
-	return r.Readline()
+	line,e:=r.Readline()
+	r.Close()
+	return line,e
 }
 func (t*TerminalContext) InputPassword(prompt string)([]byte, error){
 	readline.Stdin=t.StdinReader
 	readline.Stdout=t.StdoutWriter
 	r,_:=readline.New(prompt)
+	l,e:=r.ReadPassword(prompt)
 	t.Output("\r")
-	return r.ReadPassword(prompt)
+	r.Close()
+	return l,e
 }
 func (t*TerminalContext) Output(content string){
 	t.StdoutWriter.Write([]byte(strings.ReplaceAll(content,"\n","\r\n")))

@@ -2,14 +2,13 @@ package voruntime
 
 import (
 	"github.com/go-basic/uuid"
-	"net"
 	"os"
 	"strconv"
 	"strings"
 	"void/vokernel"
 )
 type ListenerContext struct{
-	Listener *net.Listener
+	Close func()error
 	Flags string
 }
 

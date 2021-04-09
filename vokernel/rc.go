@@ -14,6 +14,7 @@ func InitRC(){
 		log.Fatal(err)
 	}
 	jcont,err:=ioutil.ReadAll(file)
+	file.Close()
 	if err!=nil{
 		log.Fatal(err)
 	}

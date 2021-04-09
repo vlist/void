@@ -1,10 +1,13 @@
 package voruntime
 
 import (
+	"errors"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"void/vokernel"
 )
@@ -34,8 +37,8 @@ func internal_shutil(pctx *ProcContext) {
 			network := na[0]
 			address := strings.Join(na[1:], ":")
 
-			var l *net.Listener
-			var e error
+			var closer func()error
+			var e1 error=nil
 			switch network {
 			case "unix":
 				{
@@ -44,32 +47,56 @@ func internal_shutil(pctx *ProcContext) {
 					err := os.MkdirAll(dir, 0770)
 					if err != nil {
 						println("checking directory failed: " + dir)
-						e = err
+						e1 = err
+						break
 					}
-					l, e = Startserver("unix", address,false)
+					var l *net.Listener
+					l, e1 = Startserver("unix", address,false)
+					closer=(*l).Close
 				}
 			case "tcp":
 				{
-					l, e = Startserver("tcp", address,false)
+					var l *net.Listener
+					l, e1 = Startserver("tcp", address,false)
+					closer=(*l).Close
 				}
 			case "tls":
 				{
 					flag += "tls "
 					println("starting server over TLS")
-					l, e = Startserver_TLS("tcp", address)
+					var l *net.Listener
+					l, e1 = Startserver_TLS("tcp", address)
+					closer=(*l).Close
+				}
+
+			case "wss":
+				{
+					flag += "wss "
+					println("starting server on websocket over tls")
+					var l *http.Server
+					p:=regexp.MustCompile("\\/\\/([a-zA-z\\-\\d.]*):(\\d*)\\/(.*)")
+					ps:=p.FindStringSubmatch(address)
+					//println(ps[1],ps[2],"/"+ps[3])
+					if len(ps)!=4{
+						e1=errors.New("syntax error of address.")
+						break
+					}
+					l, e1=Startserver_wss(ps[1],ps[2],"/"+ps[3])
+					closer=(*l).Close
+
 				}
 			default:
 				{
 					pctx.Terminal.Println("network " + network + " not supported.")
 				}
 			}
-			if e != nil {
+			if e1 != nil {
 				pctx.Terminal.Println("opening shell on socket " + sockid + " failed.")
-				log.Print(e)
+				log.Print(e1)
 				return
 			}
 			shmap[sockid] = ListenerContext{
-				Listener: l,
+				Close: closer,
 				Flags:    flag,
 			}
 		}
@@ -85,10 +112,9 @@ func internal_shutil(pctx *ProcContext) {
 				return
 			}
 			if l, ok := shmap[sockid]; ok {
-				e := (*l.Listener).Close()
+				e := l.Close()
 				if e != nil {
-					pctx.Terminal.Println("closing shell on socket " + sockid + " failed.")
-					log.Print(e)
+					pctx.Terminal.Println("closing shell on socket " + sockid + " failed: "+e.Error())
 					return
 				}
 				delete(shmap, sockid)

@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.12.2 (20A194). [See update log](#update-log).<br/>
+Current version: 1.12.3 (20A199). [See update log](#update-log).<br/>
 Author / Contributors: <a href="https://github.com/jlywxy">jlywxy</a>, <a href="https://github.com/vlist">vlist</a>.
 <br/><br/>
 This program now don't support Windows. [see reason](#windows-no)<br/>
@@ -218,7 +218,7 @@ void:admin# info
     |___/ \____//_/ \____/ (_) /_/ /_____/  
      void:> void --everything
 
-voidshell 1.12.1 (20A194)
+voidshell 1.12.3 (20A199)
 └─ Runtime/System Arch: go1.16.2 darwin/amd64
 Process Context(pctx):
 ├─ Command Name: info
@@ -235,7 +235,7 @@ Process Context(pctx):
 Arguments could also be applied to control `info` output.
 ```shell
 void:admin# info --nologo --noctx
-voidshell 1.12.1 (20A194)
+voidshell 1.12.3 (20A199)
 └─ Runtime/System Arch: go1.16.2 darwin/amd64
 ```
 ### exec
@@ -252,26 +252,27 @@ go.sum              voruntime
 main.go             vsrc.json
 ```
 ### shutil
-Command version 1.2.<br/>
+Command version 1.3.<br/>
 Manage socket servers.<br/>
 ```shell
 void:> shutil
 usage [--options network:address]
 options:
-	-o,--open [tls|tcp|unix:address:port]: 
+	-o,--open [tls|tcp|unix:address:port,ws://address:port/path]: 
 		create a new shell socket server
-	-k,--kill [tls|tcp|unix:address:port]: 
+	-k,--kill [identifier]: 
 		close specific socket server
 	-l,--list: list all shell socket server
 ```
-network: "tcp" or "unix"(unix socket).<br/>
-address: "ip:port" for "tcp", or socket filename for "unix".<br/><br/>
+network: "tcp" or "unix"(unix socket) or "wss"(websocket over TLS).<br/>
+address: "ip:port" for "tcp" and "wss", or socket filename for "unix".<br/><br/>
 To configure TLS certificate, see [TLS Certificate Configuration](#server-tls-certificate)
 Examples:<br/>
 Opening new socket servers:
 ```shell
 void:> shutil --open unix:/tmp/vssock2
 void:> shutil --open tls:127.0.0.1:9001
+void:> shutil -o wss://test.void.net/void
 void:> shutil -o tcp:127.0.0.1:9001
 ```
 Close a socket server:
@@ -287,6 +288,7 @@ unix:/tmp/vssock1       default
 tls:127.0.0.1:9000  tls
 tcp:127.0.0.1:9001
 unix:/tmp/vssock2
+wss://test.void.net/void    wss
 ```
 The default socket neither could be reopened nor be killed.
 ### shadow
@@ -348,7 +350,11 @@ see in voruntime/internal.go
     3. voidshell running in WSL have not been tested.
     
 ## update log
-1.12.2 (20A194) bugfix *Newest Alpha
+1.12.3 (20A199) *Newest Alpha
+* fixed issues #9
+* added WebSocket support.See [shutil](#shutil)
+
+1.12.2 (20A194) bugfix 
 * C symbol `PyRun_SimpleString` not exposed in "python3-dev" in some distro(e.g. CentOS).<br/>
   deleted `PyRun_SimpleString` from init code.
   
@@ -359,7 +365,7 @@ see in voruntime/internal.go
 * removed all legacy code of node.js plugins.
 * now could login to voidshell directly from stdio, but it will mess with voidshell log output.
 
-1.12.01 (20A193d) *Newest Alpha-dev
+1.12.01 (20A193d)
 * added internal command `su` to switch user: [su](#su),added internal `who` to get user info.
 * plugin now base on cgo python3, which is experimental.
 * a new build tool is used. (./build.sh)

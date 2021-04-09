@@ -7,9 +7,11 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"void/vokernel"
+	"github.com/gorilla/websocket"
 )
 
 
@@ -64,6 +66,42 @@ func Startserver(network string,path string,admin bool) (*net.Listener,error){
 		return &l, e
 	}
 }
+type WebsocketReadWriter struct{
+	Source *websocket.Conn
+}
+
+func (w WebsocketReadWriter) Close() error {
+	return w.Source.Close()
+}
+func (w* WebsocketReadWriter)Read(p []byte)(n int,e error){
+	_,p1,e1:=w.Source.ReadMessage()
+	copy(p,p1)
+	return len(p1),e1
+}
+func (w* WebsocketReadWriter)Write(p []byte)(n int,e error){
+	e1:=w.Source.WriteMessage(websocket.BinaryMessage,p)
+	return len(p),e1
+}
+func Startserver_wss(ip string,port string,path string) (*http.Server,error){
+	var upgrader = websocket.Upgrader{}
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+	s:=http.Server{
+		Addr: ip+":"+port,
+	}
+	sm:=http.ServeMux{}
+	sm.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err!=nil{
+			log.Println(err)
+			return
+		}
+		co:=WebsocketReadWriter{Source: c}
+		go serve(&co, &co,"wss://"+ip+":"+port+path,true,false)
+	})
+	s.Handler= &sm
+	go s.ListenAndServeTLS(vokernel.RC["tls_config_pem"], vokernel.RC["tls_config_key"])
+	return &s,nil
+}
 func Startserver_TLS(network string,path string) (*net.Listener,error){
 	cert,e:=tls.LoadX509KeyPair(vokernel.RC["tls_config_pem"], vokernel.RC["tls_config_key"]) //"cert/server.pem","cert/server.key")
 	cfg:=&tls.Config{Certificates: []tls.Certificate{cert}}
@@ -74,21 +112,21 @@ func Startserver_TLS(network string,path string) (*net.Listener,error){
 		go func() {
 			for {
 				co, e := l.Accept()
-				println("new connection on " + path)
 				if e!=nil{
-					println("err when accept")
+					println("err when accept: ")
 					log.Print(e)
 					break
 				}
+				println("new connection on " + path)
 				_,e=co.Write([]byte("\r\nconnected to voidshell\r\n\r\n"))
 				if e!=nil{
-					println("err when write")
+					println("err when write: ")
 					log.Print(e)
 					//break
 				}
 				go serveSocket(co,"tls:"+path,true,false)
 			}
-			println("tls accept stopped")
+			println("tls accept stopped. ")
 		}()
 		return &l, e
 	}
