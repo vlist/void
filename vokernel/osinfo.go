@@ -10,7 +10,7 @@ type OSInfo struct{
 }
 func GetOSInfo() OSInfo {
 	return OSInfo{
-		Version:               "1.12.3 (20A199)",
+		Version:               "1.12.4 (20A19a)",
 		Runtime_SystemArch:     runtime.Version()+" "+runtime.GOOS+"/"+runtime.GOARCH,
 	}
 }

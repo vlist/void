@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"void/vokernel"
 	"github.com/gorilla/websocket"
 )
@@ -68,6 +69,7 @@ func Startserver(network string,path string,admin bool) (*net.Listener,error){
 }
 type WebsocketReadWriter struct{
 	Source *websocket.Conn
+	mu      sync.Mutex
 }
 
 func (w WebsocketReadWriter) Close() error {
@@ -79,6 +81,8 @@ func (w* WebsocketReadWriter)Read(p []byte)(n int,e error){
 	return len(p1),e1
 }
 func (w* WebsocketReadWriter)Write(p []byte)(n int,e error){
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	e1:=w.Source.WriteMessage(websocket.BinaryMessage,p)
 	return len(p),e1
 }
@@ -138,10 +142,14 @@ func serve(reader io.ReadCloser,writer io.WriteCloser,servername string,secured 
 	stdinReader, socketStdinWriter:=io.Pipe()
 	termid:=uuid.New()
 	var stdinWriterVolatile=vokernel.VolatileWriter{Destination: socketStdinWriter}
+	var tctx TerminalContext
 	go func(){
 		io.Copy(&stdinWriterVolatile,reader)  //socket write to stdin writer, shell read from stdin reader
 		println("disconnected")
 		delete(termmap,termid)
+		//reader.Close()
+		//writer.Close()
+		tctx.Disconnect()
 	}()
 	env:=make(map[string]interface{})
 	uctx:= CastUser("guest","guest")
@@ -149,7 +157,7 @@ func serve(reader io.ReadCloser,writer io.WriteCloser,servername string,secured 
 		uctx= CastUser("admin","admin")
 	}
 
-	tctx:= TerminalContext{
+	tctx= TerminalContext{
 		RawConnection:					reader,
 		StdinWriterSwitch:              &stdinWriterVolatile,
 		StdinReader:                    stdinReader,

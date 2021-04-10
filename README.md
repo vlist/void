@@ -1,7 +1,7 @@
 # voidshell
 voidshell is a CUSTOM shell service
 ![avatar](void.png)
-Current version: 1.12.3 (20A199). [See update log](#update-log).<br/>
+Current version: 1.12.4 (20A19a). [See update log](#update-log).<br/>
 Author / Contributors: <a href="https://github.com/jlywxy">jlywxy</a>, <a href="https://github.com/vlist">vlist</a>.
 <br/><br/>
 This program now don't support Windows. [see reason](#windows-no)<br/>
@@ -218,7 +218,7 @@ void:admin# info
     |___/ \____//_/ \____/ (_) /_/ /_____/  
      void:> void --everything
 
-voidshell 1.12.3 (20A199)
+voidshell 1.12.4 (20A19a)
 └─ Runtime/System Arch: go1.16.2 darwin/amd64
 Process Context(pctx):
 ├─ Command Name: info
@@ -235,7 +235,7 @@ Process Context(pctx):
 Arguments could also be applied to control `info` output.
 ```shell
 void:admin# info --nologo --noctx
-voidshell 1.12.3 (20A199)
+voidshell 1.12.4 (20A19a)
 └─ Runtime/System Arch: go1.16.2 darwin/amd64
 ```
 ### exec
@@ -350,7 +350,11 @@ see in voruntime/internal.go
     3. voidshell running in WSL have not been tested.
     
 ## update log
-1.12.3 (20A199) *Newest Alpha
+1.12.4 (20A19a) *Newest Alpha
+* fixed issue of websocket writer (concurrent write).
+* changed method of input history tracking.
+
+1.12.3 (20A199) 
 * fixed issues #9
 * added WebSocket support.See [shutil](#shutil)
 

@@ -21,6 +21,7 @@ type TerminalContext struct {
 	StdoutWriter io.WriteCloser
 	StdinWriterSwitch *vokernel.VolatileWriter
 	internalWriterDestination io.Writer
+	currentReadliner *readline.Instance
 	Secured bool
 	Delim byte
 	ShellName string
@@ -47,24 +48,32 @@ func (t*TerminalContext) Input(prompt string)(string, error){
 	readline.Stdin=t.StdinReader
 	readline.Stdout=t.StdoutWriter
 	//var l readline.Listener= &KeyListener{t}
+	var h string=".voidsh_history/"+t.User.Group+":"+t.User.Name
+	if t.User.Group=="guest"{
+		h=""
+	}
 	r,_:=readline.NewEx(&readline.Config{
 		Prompt:                 prompt,
-		HistoryFile:            ".voidsh_history/"+t.TerminalID,
+		HistoryFile:            h,
 		HistoryLimit:           100,
 		//Listener:               l,
 	})
+	t.currentReadliner=r
 	t.Output("\r")
 	line,e:=r.Readline()
 	r.Close()
+	t.currentReadliner=nil
 	return line,e
 }
 func (t*TerminalContext) InputPassword(prompt string)([]byte, error){
 	readline.Stdin=t.StdinReader
 	readline.Stdout=t.StdoutWriter
 	r,_:=readline.New(prompt)
+	t.currentReadliner=r
 	l,e:=r.ReadPassword(prompt)
 	t.Output("\r")
 	r.Close()
+	t.currentReadliner=nil
 	return l,e
 }
 func (t*TerminalContext) Output(content string){
