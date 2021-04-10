@@ -69,12 +69,12 @@ func internal_info(pctx *ProcContext){
 	}
 	if printLogo{
 		logo:=
-`<vft green>                    _      __ </vft> <vft blue>__           </vft>
-<vft green>     _   __ ____   (_) ___/ /</vft> _<vft blue>\ \          </vft>
-<vft green>    | | / // __ \ / // __  /</vft> (_)<vft blue>\ \         </vft>
-<vft green>    | |/ // /_/ // // /_/ /</vft> _   <vft blue>/ / ______  </vft>  
-<vft green>    |___/ \____//_/ \____/</vft> (_) <vft blue>/_/ /_____/  </vft>
-     <vft green bold>void</vft>:<vft blue bold>> </vft>void --everything
+`<vft green>                  _      __ </vft> <vft blue>__   </vft>
+<vft green>   _   __ ____   (_) ___/ /</vft> _<vft blue>\ \   </vft>
+<vft green>  | | / // __ \ / // __  /</vft> (_)<vft blue>\ \   </vft>
+<vft green>  | |/ // /_/ // // /_/ /</vft> _   <vft blue>/ / ______</vft>  
+<vft green>  |___/ \____//_/ \____/</vft> (_) <vft blue>/_/ /_____/</vft>
+  <vft green bold>void</vft>:<vft blue bold>> </vft>void --everything
 
 `
 		pctx.Terminal.Output(vokernel.Format(logo))
