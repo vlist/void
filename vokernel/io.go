@@ -1,27 +1,38 @@
 package vokernel
 
-//type BranchWriter struct {
-//	PipeWriter interface{Write (p []byte) (n int, e error)}
-//	EchoWriter interface{Write (p []byte) (n int, e error)}
-//}
-//
-//func (mw *BranchWriter) Write (p []byte) (n int, e error){
-//	if mw.EchoWriter!=nil{
-//		go mw.EchoWriter.Write(p)
-//	}
-//	return mw.PipeWriter.Write(p)
-//}
+import "io"
+
+type multiW struct {
+	io.Writer
+	cs []io.Closer
+}
+func MultiWriteCloser(ws ...io.Writer) io.WriteCloser {
+	m := &multiW{Writer: io.MultiWriter(ws...)}
+	for _, w := range ws {
+		if c, ok := w.(io.Closer); ok {
+			m.cs = append(m.cs, c)
+		}
+	}
+	return m
+}
+func (m *multiW) Close() error {
+	var first error
+	for _, c := range m.cs {
+		if err := c.Close(); err != nil && first == nil {
+			first = err
+		}
+	}
+	return first
+}
 
 type VolatileWriter struct{
-	Destination interface{Write (p []byte) (n int, e error)}
+	Destination Writer
 }
 func (vw *VolatileWriter) Write (p []byte) (n int, e error){
 	return vw.Destination.Write(p)
 }
-//
-//type VolatileReader struct{
-//	Source interface{Read (p []byte) (n int, e error)}
-//}
-//func (vr *VolatileReader) Read (p []byte) (n int, e error){
-//	return vr.Source.Read(p)
-//}
+func (vw *VolatileWriter) Close () error{
+	//return vw.Destination.Close()
+	return nil
+}
+type Writer interface{Write (p []byte) (n int, e error)}

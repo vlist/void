@@ -1,28 +1,16 @@
 package vokernel
 
 import (
-	"os"
 	"runtime"
 )
 
 type OSInfo struct{
-	VoVersion               string
-	GoVersion               string
-	CurrentWorkingDirectory string
-	SystemArch              string
-}
-func getCwd() string{
-	wd,err:=os.Getwd()
-	if err!=nil{
-		return ""
-	}
-	return wd
+	Version               string
+	Runtime_SystemArch    string
 }
 func GetOSInfo() OSInfo {
 	return OSInfo{
-		VoVersion:               "1.11.3 (20A0323)",
-		GoVersion:               runtime.Version()+" "+runtime.GOARCH,
-		CurrentWorkingDirectory: getCwd(),
-		SystemArch:              runtime.GOOS+"/"+runtime.GOARCH,
+		Version:               "1.12.4 (20A19a)",
+		Runtime_SystemArch:     runtime.Version()+" "+runtime.GOOS+"/"+runtime.GOARCH,
 	}
 }

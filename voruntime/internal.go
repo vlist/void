@@ -1,193 +1,102 @@
 package voruntime
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"log"
-	"net"
+	"github.com/go-basic/uuid"
 	"os"
+	"strconv"
 	"strings"
 	"void/vokernel"
 )
 type ListenerContext struct{
-	Listener *net.Listener
+	Close func()error
 	Flags string
 }
-var shmap=make(map[string]ListenerContext)
-var internal map[string]func(*vokernel.ProcContext)
+
+var internal map[string]func(*ProcContext)
 func InitInternal(){
-	internal=map[string]func(*vokernel.ProcContext){
-
+	internal=map[string]func(*ProcContext){
+		"void": func(pctx *ProcContext) { },
+		"shadow": internal_shadow,
 		"info": internal_info,
-		"exit": func(pctx *vokernel.ProcContext) {
-			pctx.Shell.Writer.Close()
+		"exit": func(pctx *ProcContext) {
+			terminal_dispose(pctx.Terminal)
 		},
-		"sudo": internal_sudo,
-		"unsudo": func(pctx *vokernel.ProcContext) {
-			pctx.Shell.Privileged=false
+		"clear": func(pctx *ProcContext) {
+			h,_:=Getsize(*pctx.Terminal)
+			for i:=0;i<h-1;i++{
+				pctx.Terminal.Output("\n")
+			}
 		},
-		"shutil": func(pctx *vokernel.ProcContext){
-			rcsockid:="unix:"+RC["socket"]
-			usage:=`usage [--options network:address] [--tls]
-options:
-	--open: create a new shell socket server
-	--kill: close specific socket server
-	--list: list all shell socket server
---tls:
-	serve over TLS`
-			if len(pctx.Args) ==0{
-				pctx.Shell.Output(usage)
-				return
-			}
-			switch pctx.Args[0]{
-			case "--open":{
-				var flag=""
-				if len(pctx.Args)<2{
-					pctx.Shell.Output("invalid arguments\n")
-					pctx.Shell.Output(usage)
-					return
-				}
-				sockid:=pctx.Args[1]
-				if sockid==rcsockid{
-					pctx.Shell.Output("could not operate on default socket\n")
-					return
-				}
-				na:=strings.Split(sockid,":")
-				network:=na[0]
-				address:=strings.Join(na[1:],":")
-				switch network{
-				case "tcp":{}
-				case "unix":{
-					os.RemoveAll(address)
-				}
-				default:{
-					pctx.Shell.Output("network "+network+" not supported\n")
-				}
-				}
-				var l *net.Listener
-				var e error
-				//if len(pctx.Args)>=3 && pctx.Args[2]=="--ecdhe-aes"{
-				//	println("starting server using ecdhe-aes")
-				//	l,e= Startserver_ECDHE_AES(network,address)
-				//}else
-				if len(pctx.Args)>=3 && pctx.Args[2]=="--tls" {
-					flag+="tls "
-					println("starting server using TLS")
-					l,e= Startserver_TLS(network,address)
-				}else{
-					l,e= Startserver(network,address)
-				}
-
-				if e!=nil{
-					pctx.Shell.Output("opening shell on socket "+sockid+" failed\n")
-					log.Print(e)
-					return
-				}
-				shmap[sockid]=ListenerContext{
-					Listener: l,
-					Flags:    flag,
-				}
-			}
-			case "--kill":{
-				if len(pctx.Args)<2{
-					pctx.Shell.Output("invalid arguments\n")
-					pctx.Shell.Output(usage)
-					return
-				}
-				sockid:=pctx.Args[1]
-				if sockid==rcsockid{
-					pctx.Shell.Output("could not operate on default socket\n")
-					return
-				}
-				if l,ok:=shmap[sockid];ok{
-					e:=(*l.Listener).Close()
-					if e!=nil{
-						pctx.Shell.Output("closing shell on socket "+sockid+" failed\n")
-						log.Print(e)
-						return
-					}
-					delete(shmap,sockid)
-				}else{
-					pctx.Shell.Output("closing shell on socket "+sockid+" failed: listener not found\n")
-				}
-			}
-			case "--list":{
-				pctx.Shell.Output("opening socket shell: \n")
-				pctx.Shell.Output(rcsockid+"\tdefault\n")
-				for k,v := range shmap {
-					pctx.Shell.Output(k+"\t"+v.Flags+"\n")
-				}
-			}
-			default:{
-				pctx.Shell.Output("invalid arguments\n")
-				pctx.Shell.Output(usage)
-				return
-			}
-
-			}
-
+		"shutil": internal_shutil,
+		"_stop_repl":func(pctx *ProcContext) {
+			pctx.Terminal.StopREPL()
+		},
+		"su": internal_su,
+		"who": func(pctx *ProcContext) {
+			u:=pctx.Terminal.User
+			pctx.Terminal.Println("user: "+u.Group+":"+u.Name)
+			pctx.Terminal.Println("permission: "+PermissionVisualize(u))
 		},
 	}
+	flag_name:="__cast_admin_"+uuid.New()
+	println("in case admin password forgot: type "+flag_name)
+	internal[flag_name]=func(pctx *ProcContext) {
+		u:=CastUser("admin","admin");
+		pctx.Terminal.User=&u;
+		pctx.Terminal.Environment["_guest_su_init"]=true
+	}
 }
-func internal_info(pctx *vokernel.ProcContext){
+func Info(){
+	p:=ProcContext{
+		Args:        []string{"--noctx"},  //DO NOT remove this unless fill required fields in contexts below.
+		OS: vokernel.GetOSInfo(),
+		Terminal:    &TerminalContext{
+			StdoutWriter: os.Stdout,
+		},
+	}
+	internal_info(&p)
+}
+func internal_info(pctx *ProcContext){
 	var printLogo bool=true
-	var printExecContext bool=true
+	var printContext bool=true
 	for _,v:=range pctx.Args{
 		if v=="--nologo" {
 			printLogo=false
 		}
-		if v=="--noexeccontext" {
-			printExecContext=false
+		if v=="--noctx" {
+			printContext=false
 		}
 	}
 	if printLogo{
-		logo:=`
-<vft green>                    _      __ </vft> <vft blue>__           </vft>
-<vft green>     _   __ ____   (_) ___/ /</vft> _<vft blue>\ \          </vft>
-<vft green>    | | / // __ \ / // __  /</vft> (_)<vft blue>\ \         </vft>
-<vft green>    | |/ // /_/ // // /_/ /</vft> _   <vft blue>/ / ______  </vft>  
-<vft green>    |___/ \____//_/ \____/</vft> (_) <vft blue>/_/ /_____/  </vft>
-     <vft green bold>void</vft>:<vft blue bold>></vft>void --everything
+		logo:=
+`<vft green>                  _      __ </vft> <vft blue>__   </vft>
+<vft green>   _   __ ____   (_) ___/ /</vft> _<vft blue>\ \   </vft>
+<vft green>  | | / // __ \ / // __  /</vft> (_)<vft blue>\ \   </vft>
+<vft green>  | |/ // /_/ // // /_/ /</vft> _   <vft blue>/ / ______</vft>  
+<vft green>  |___/ \____//_/ \____/</vft> (_) <vft blue>/_/ /_____/</vft>
+  <vft green bold>void</vft>:<vft blue bold>> </vft>void --everything
 
 `
-		pctx.Shell.Output(vokernel.Format(logo))
+		pctx.Terminal.Output(vokernel.Format(logo))
 	}
 	info:= vokernel.GetOSInfo()
 	var formattedInfo=""
-	formattedInfo+="<vft bold>voidshell</vft> "+info.VoVersion+"\n"
-	formattedInfo+="    Golang Version: "+info.GoVersion+"\n"
-	formattedInfo+="    Current Working Directory: "+info.CurrentWorkingDirectory+"\n"
-	formattedInfo+="    System Arch: "+info.SystemArch+"\n"
-	pctx.Shell.Output(vokernel.Format(formattedInfo))
-	if printExecContext {
+	formattedInfo+="<vft bold>voidshell</vft> "+info.Version+"\n"
+	formattedInfo+="└─ Runtime/System Arch: "+info.Runtime_SystemArch+"\n"
+	pctx.Terminal.Output(vokernel.Format(formattedInfo))
+	if printContext {
 		var formattedExecContext string = ""
 		formattedExecContext += "<vft bold>Process Context(pctx):</vft>\n"
-		formattedExecContext += "    Command Name: " + pctx.CommandName + "\n"
-		formattedExecContext += "    Arguments: " + "[" + strings.Join(pctx.Args, ",") + "]" + "\n"
-		formattedExecContext += "    Shell Context(sctx): " + "\n"
-		formattedExecContext += "        Terminal Name: " + pctx.Shell.Name + "\n"
-		formattedExecContext += "        Privileged: " + (func() string {
-			if pctx.Shell.Privileged {
-				return "true"
-			} else {
-				return "false"
-			}
-		})() + "\n"
-		pctx.Shell.Output(vokernel.Format(formattedExecContext))
-	}
-}
-func internal_sudo(pctx *vokernel.ProcContext){
-	pctx.Shell.Output("sudo: input password\n")
-	ipwd,_:=pctx.Shell.InputPassword("")
-	h:=sha256.New()
-	h.Write(ipwd)
-	ipwden:=hex.EncodeToString(h.Sum(nil))
-	if RC["password_encrypted"]==ipwden{
-		pctx.Shell.Privileged=true
-		pctx.Shell.Output("sudo: success\n")
-		return
-	}else{
-		pctx.Shell.Output("sudo: authentication failed\n")
+		formattedExecContext += "├─ Command Name: " + pctx.CommandName + "\n"
+		formattedExecContext += "├─ Arguments: " + "[" + strings.Join(pctx.Args, ",") + "]" + "\n"
+		formattedExecContext += "└─ <vft bold>Terminal Context(tctx):</vft>" + "\n"
+		formattedExecContext += "   ├─ Shell Interface: " + pctx.Terminal.ShellName + "\n"
+		formattedExecContext += "   ├─ Terminal ID: " + pctx.Terminal.TerminalID + "\n"
+		formattedExecContext += "   ├─ Transmission Secured: " + strconv.FormatBool(pctx.Terminal.Secured) + "\n"
+		formattedExecContext += "   └─ <vft bold>User Context(uctx):</vft>" + "\n"
+		formattedExecContext += "      ├─ User Identifier: " + pctx.Terminal.User.Group+":"+pctx.Terminal.User.Name + "\n"
+		formattedExecContext += "      └─ Permissions: " + PermissionVisualize(pctx.Terminal.User) + "\n"
+		pctx.Terminal.Output(vokernel.Format(formattedExecContext))
 	}
 }
 
